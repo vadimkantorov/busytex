@@ -47,7 +47,7 @@ cd texlive-build-$SUFFIX
 
 echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $CACHE
 
-CFLAGS="-DELIDE_CODE -I$PREFIX/include"
+CFLAGS="-I$PREFIX/include"
 $EMCONFIGURE ../configure                                    \
   --cache-file=$CACHE                           \
   --prefix=$PREFIX                              \
