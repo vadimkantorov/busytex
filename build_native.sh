@@ -124,7 +124,7 @@ cd $FONTCONFIG_SOURCE_NAME/build-$SUFFIX
 echo 'all install:' > ../test/Makefile.in
 FREETYPE_CFLAGS="-I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/freetype2"
 FREETYPE_LIBS="-L$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ -lfreetype"
-EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig EMCONFIGURE_JS=2 CFLAGS=-Duuid_generate_random=uuid_generate FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" $EMCONFIGURE ../configure \
+CFLAGS=-Duuid_generate_random=uuid_generate FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" $EMCONFIGURE ../configure \
     --cache-file $ROOT/config-fontconfig-wasm.cache \
     --prefix=$PREFIX \
     --enable-static \
