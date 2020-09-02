@@ -84,6 +84,9 @@ $EMCONFIGURE ../configure                                    \
 
 $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 
+#icu/
+#icu/icu-build/
+
 pushd libs/icu/include/unicode
 $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 popd
