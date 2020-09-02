@@ -16,13 +16,11 @@ TEXLIVE_TEXMF_URL=ftp://tug.org/texlive/historic/2020/texlive-20200406-texmf.tar
 TEXLIVE_TLPDB_URL=ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-full.tar.gz
 TEXLIVE_BASE_URL=http://mirrors.ctan.org/macros/latex/base.zip
 TEXLIVE_INSTALLER_URL=http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
-TEXLIVE_BASE_NAME=$(basename $TEXLIVE_BASE_URL)
+TEXLIVE_BASE_NAME=$(basename $TEXLIVE_BASE_URL .zip)
 export TEXMFDIST=$PWD/texlive/texmf-dist
 
 TEXLIVE_SOURCE_URL=https://github.com/TeX-Live/texlive-source/archive/9ed922e7d25e41b066f9e6c973581a4e61ac0328.tar.gz
-TEXLIVE_SOURCE_NAME=$(basename $TEXLIVE_SOURCE_URL)
-TEXLIVE_SOURCE_NAME=${TEXLIVE_SOURCE_NAME%%.*}
-TEXLIVE_SOURCE_NAME=texlive-source-9ed922e7d25e41b066f9e6c973581a4e61ac0328
+TEXLIVE_SOURCE_NAME=texlive-source-$(basename $TEXLIVE_SOURCE_URL .tar.gz)
 TEXLIVE_SOURCE_DIR=$PWD/$TEXLIVE_SOURCE_NAME
 
 ROOT=$PWD
@@ -35,7 +33,7 @@ XETEX_EXE=$PREFIX/bin/xetex
 
 export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
 
-mkdir -p $PREFIX
+mkdir -p $PREFIX $PREFIX/bin
 mkdir -p $BACKUP/texk $BACKUP/texk/web2c
 
 wget --no-clobber $TEXLIVE_SOURCE_URL
@@ -84,6 +82,7 @@ $EMCONFIGURE ../configure                                    \
   --with-banner-add="_BLFS" CFLAGS="$CFLAGS"
 
 $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
+$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS" install
 
 #icu/
 #icu/icu-build/
@@ -137,9 +136,9 @@ $EMMAKE make $MAKEFLAGS install
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
 
 $EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex
-
 cp xetex $XETEX_EXE
 cp $XETEX_EXE $XELATEX_EXE
+
 
 cd $ROOT
 mkdir -p $TEXLIVE
@@ -159,8 +158,8 @@ cd $ROOT
 wget --no-clobber $TEXLIVE_BASE_URL
 mkdir -p latex_format
 cd latex_format
-unzip -o ../$TEXLIVE_BASE_NAME
-cd base
+unzip -o ../$(basename TEXLIVE_BASE_URL)
+cd $TEXLIVE_BASE_NAME
 $XELATEX_EXE -ini -etex unpack.ins
 touch hyphen.cfg
 $XELATEX_EXE -ini -etex latex.ltx
