@@ -38,14 +38,13 @@ tar -xvf $(basename $TEXLIVE_SOURCE_URL)
 cd $TEXLIVE_SOURCE_DIR
 
 mv texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools $BACKUP/texk || true
-#mv texk/web2c/luatexdir texk/web2c/mfluadir texk/web2c/mfluajitdir $BACKUP/texk/web2c || true
 
 mkdir -p texlive-build-$SUFFIX
 cd texlive-build-$SUFFIX
 
 echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $CACHE
 
-CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I$PREFIX/include"
+CFLAGS="-DELIDE_CODE -I$PREFIX/include"
 $EMCONFIGURE ../configure                                    \
   --cache-file=$CACHE                           \
   --prefix=$PREFIX                              \
@@ -78,6 +77,8 @@ $EMCONFIGURE ../configure                                    \
   --with-fontconfig-includes=$ROOT/$FONTCONFIG_SOURCE_NAME        \
   --with-fontconfig-libdir="$PREFIX/lib"                          \
   --with-banner-add="_BLFS" CFLAGS="$CFLAGS"
+
+$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 
 pushd libs/icu/include/unicode
 $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
@@ -132,4 +133,32 @@ $EMMAKE make $MAKEFLAGS install
 
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
 
-emmake make $MAKEFLAGS $EMDONOTREMAKE xetex
+$EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex
+
+cp xetex $XETEX_EXE
+cp $XETEX_EXE $XELATEX_EXE
+
+#cd $ROOT
+#mkdir -p $TEXLIVE
+#echo selected_scheme scheme-basic > $TEXLIVE/profile.input
+#echo TEXDIR $TEXLIVE >> $TEXLIVE/profile.input
+#echo TEXMFLOCAL $TEXLIVE/texmf-local >> $TEXLIVE/profile.input
+#echo TEXMFSYSVAR $TEXLIVE/texmf-var >> $TEXLIVE/profile.input
+#echo TEXMFSYSCONFIG $TEXLIVE/texmf-config >> $TEXLIVE/profile.input
+#echo TEXMFVAR $PWD/home/texmf-var >> $TEXLIVE/profile.input
+#wget --no-clobber $TEXLIVE_INSTALLER_URL
+#cd $TEXLIVE
+#tar xzvf ../install-tl-unx.tar.gz
+#./install-tl-*/install-tl -profile $TEXLIVE/profile.input
+#rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
+
+#cd $ROOT
+#export TEXMFDIST=$PWD/texlive/texmf-dist
+#wget --no-clobber $TEXLIVE_BASE_URL
+#mkdir -p latex_format
+#cd latex_format
+#unzip -o ../base.zip
+#cd base
+#$XELATEX_EXE -ini -etex unpack.ins
+#touch hyphen.cfg
+#$XELATEX_EXE -ini -etex latex.ltx
