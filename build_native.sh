@@ -30,6 +30,9 @@ PREFIX=$PWD/prefix-$SUFFIX
 CACHE=$PWD/config-$SUFFIX.cache
 XELATEX_EXE=$PREFIX/bin/xelatex
 XETEX_EXE=$PREFIX/bin/xetex
+
+export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+
 mkdir -p $PREFIX
 mkdir -p $BACKUP/texk $BACKUP/texk/web2c
 
@@ -89,12 +92,8 @@ $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 popd
 
 pushd libs/freetype2
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
-cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/freetype2/ft-build/apinames $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ft-build
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
+$EMMAKE make $MAKEFLAGS
 popd
-
-exit 0
 
 cd $ROOT
 wget --no-clobber $EXPAT_SOURCE_URL
@@ -102,7 +101,6 @@ tar -xf $(basename $EXPAT_SOURCE_URL)
 mkdir $EXPAT_SOURCE_NAME/build-$SUFFIX
 cd $EXPAT_SOURCE_NAME/build-$SUFFIX
 $EMCMAKE cmake \
-    -DCMAKE_C_FLAGS="-O3 --llvm-lto 1" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DEXPAT_BUILD_DOCS=off \
     -DEXPAT_SHARED_LIBS=off \
@@ -138,27 +136,27 @@ $EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex
 cp xetex $XETEX_EXE
 cp $XETEX_EXE $XELATEX_EXE
 
-#cd $ROOT
-#mkdir -p $TEXLIVE
-#echo selected_scheme scheme-basic > $TEXLIVE/profile.input
-#echo TEXDIR $TEXLIVE >> $TEXLIVE/profile.input
-#echo TEXMFLOCAL $TEXLIVE/texmf-local >> $TEXLIVE/profile.input
-#echo TEXMFSYSVAR $TEXLIVE/texmf-var >> $TEXLIVE/profile.input
-#echo TEXMFSYSCONFIG $TEXLIVE/texmf-config >> $TEXLIVE/profile.input
-#echo TEXMFVAR $PWD/home/texmf-var >> $TEXLIVE/profile.input
-#wget --no-clobber $TEXLIVE_INSTALLER_URL
-#cd $TEXLIVE
-#tar xzvf ../install-tl-unx.tar.gz
-#./install-tl-*/install-tl -profile $TEXLIVE/profile.input
-#rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
+cd $ROOT
+mkdir -p $TEXLIVE
+echo selected_scheme scheme-basic > $TEXLIVE/profile.input
+echo TEXDIR $TEXLIVE >> $TEXLIVE/profile.input
+echo TEXMFLOCAL $TEXLIVE/texmf-local >> $TEXLIVE/profile.input
+echo TEXMFSYSVAR $TEXLIVE/texmf-var >> $TEXLIVE/profile.input
+echo TEXMFSYSCONFIG $TEXLIVE/texmf-config >> $TEXLIVE/profile.input
+echo TEXMFVAR $PWD/home/texmf-var >> $TEXLIVE/profile.input
+wget --no-clobber $TEXLIVE_INSTALLER_URL
+cd $TEXLIVE
+tar -xzvf ../install-tl-unx.tar.gz
+./install-tl-*/install-tl -profile $TEXLIVE/profile.input
+rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
 
-#cd $ROOT
-#export TEXMFDIST=$PWD/texlive/texmf-dist
-#wget --no-clobber $TEXLIVE_BASE_URL
-#mkdir -p latex_format
-#cd latex_format
-#unzip -o ../base.zip
-#cd base
-#$XELATEX_EXE -ini -etex unpack.ins
-#touch hyphen.cfg
-#$XELATEX_EXE -ini -etex latex.ltx
+cd $ROOT
+export TEXMFDIST=$PWD/texlive/texmf-dist
+wget --no-clobber $TEXLIVE_BASE_URL
+mkdir -p latex_format
+cd latex_format
+unzip -o ../base.zip
+cd base
+$XELATEX_EXE -ini -etex unpack.ins
+touch hyphen.cfg
+$XELATEX_EXE -ini -etex latex.ltx
