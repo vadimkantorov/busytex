@@ -1,4 +1,4 @@
-### Build XeTeX from source in TexLive 2020
+### [WIP] Build a minimal XeTeX from source in TexLive 2020
 
 ```shell
 # build native tools
