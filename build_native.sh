@@ -1,4 +1,4 @@
-export MAKEFLAGS=-j20
+export MAKEFLAGS=-j8
 
 SUFFIX=native
 EMMAKE=
