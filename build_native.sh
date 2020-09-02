@@ -16,6 +16,7 @@ TEXLIVE_TEXMF_URL=ftp://tug.org/texlive/historic/2020/texlive-20200406-texmf.tar
 TEXLIVE_TLPDB_URL=ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-full.tar.gz
 TEXLIVE_BASE_URL=http://mirrors.ctan.org/macros/latex/base.zip
 TEXLIVE_INSTALLER_URL=http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+TEXLIVE_BASE_NAME=$(basename $TEXLIVE_BASE_URL)
 export TEXMFDIST=$PWD/texlive/texmf-dist
 
 TEXLIVE_SOURCE_URL=https://github.com/TeX-Live/texlive-source/archive/9ed922e7d25e41b066f9e6c973581a4e61ac0328.tar.gz
@@ -158,7 +159,7 @@ cd $ROOT
 wget --no-clobber $TEXLIVE_BASE_URL
 mkdir -p latex_format
 cd latex_format
-unzip -o ../base.zip
+unzip -o ../$TEXLIVE_BASE_NAME
 cd base
 $XELATEX_EXE -ini -etex unpack.ins
 touch hyphen.cfg
