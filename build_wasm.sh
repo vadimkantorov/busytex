@@ -1,4 +1,4 @@
-export MAKEFLAGS=-j8
+export MAKEFLAGS=-j4
 
 SUFFIX=wasm
 EMMAKE=emmake
@@ -103,16 +103,17 @@ for f in teckit harfbuzz graphite2 libpng zlib pplib icu; do
     pushd libs/$f
     $EMMAKE make $MAKEFLAGS
     popd
-end
+done
 
 pushd libs/icu/icu-build
+mkdir -p bin stubdata lib
 cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/bin/icupkg $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/bin/pkgdata bin/
 cp $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/stubdata/libicudata.a stubdata/
 pushd common
-$EMMAKE make $MAKEFLAGS CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+$EMMAKE make $MAKEFLAGS #CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0"
 popd
 pushd i18n
-$EMMAKE make $MAKEFLAGS CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0"
+$EMMAKE make $MAKEFLAGS #CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0"
 popd
 popd
 echo END LIBS
@@ -155,14 +156,14 @@ $EMMAKE make $MAKEFLAGS install
 
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
 CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0 $PREFIX/lib/libfontconfig.a $PREFIX/lib/libexpat.a $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/icu-build/lib/libicuuc.a"
-for i in 1 2; do 
-    echo "BEGIN BUILD $i"
-    for f in ctangle otangle tangle tangleboot tie ctangleboot; do
-        cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/
-    done
-    for f in fixwrites makecpool splitup web2c; do
-        cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/web2c/
-    done
-    $EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex CXX="$CXX"
-    echo "END BUILD $i"
-done
+for f in ctangle otangle tangle tangleboot tie ctangleboot; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/; done
+for f in fixwrites makecpool splitup web2c; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/web2c/; done
+$EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex
+
+for f in ctangle otangle tangle tangleboot tie ctangleboot; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/; done
+for f in fixwrites makecpool splitup web2c; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/web2c/; done
+$EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex
+
+for f in ctangle otangle tangle tangleboot tie ctangleboot; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/; done
+for f in fixwrites makecpool splitup web2c; do cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/web2c/$f  $TEXLIVE_SOURCE_DIR/texlive-build-wasm/texk/web2c/web2c/; done
+$EMMAKE make $MAKEFLAGS $EMDONOTREMAKE xetex CXX="$CXX"
