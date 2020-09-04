@@ -45,55 +45,58 @@ mkdir -p texlive-build-$SUFFIX
 cd texlive-build-$SUFFIX
 
 echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $CACHE
-CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include"
-$EMCONFIGURE ../configure                                    \
-  --cache-file=$CACHE                           \
-  --prefix=$PREFIX                              \
-  --enable-dump-share                           \
-  --enable-static                               \
-  --enable-xetex                                \
-  --enable-dvipdfm-x                            \
-  --enable-icu                                  \
-  --enable-freetype2                            \
-  --disable-shared                              \
-  --disable-multiplatform                       \
-  --disable-native-texlive-build                \
-  --disable-all-pkgs                            \
-  --without-x                                   \
-  --without-system-cairo                        \
-  --without-system-gmp                          \
-  --without-system-graphite2                    \
-  --without-system-harfbuzz                     \
-  --without-system-libgs                        \
-  --without-system-libpaper                     \
-  --without-system-mpfr                         \
-  --without-system-pixman                       \
-  --without-system-poppler                      \
-  --without-system-xpdf                         \
-  --without-system-icu                          \
-  --without-system-fontconfig                   \
-  --without-system-freetype2                    \
-  --without-system-libpng                       \
-  --without-system-zlib                         \
-  --with-fontconfig-includes=$ROOT/$FONTCONFIG_SOURCE_NAME        \
-  --with-fontconfig-libdir="$PREFIX/lib"                          \
-  --with-banner-add="_BLFS" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
-
-$EMMAKE make $MAKEFLAGS 
-$EMMAKE make $MAKEFLAGS install
-
-pushd texk/dvipdfm-x
-$EMMAKE make $MAKEFLAGS 
-popd
+#CFLAGS="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include"
+#$EMCONFIGURE ../configure                                    \
+#  --cache-file=$CACHE                           \
+#  --prefix=$PREFIX                              \
+#  --enable-dump-share                           \
+#  --enable-static                               \
+#  --enable-xetex                                \
+#  --enable-dvipdfm-x                            \
+#  --enable-icu                                  \
+#  --enable-freetype2                            \
+#  --disable-shared                              \
+#  --disable-multiplatform                       \
+#  --disable-native-texlive-build                \
+#  --disable-all-pkgs                            \
+#  --without-x                                   \
+#  --without-system-cairo                        \
+#  --without-system-gmp                          \
+#  --without-system-graphite2                    \
+#  --without-system-harfbuzz                     \
+#  --without-system-libgs                        \
+#  --without-system-libpaper                     \
+#  --without-system-mpfr                         \
+#  --without-system-pixman                       \
+#  --without-system-poppler                      \
+#  --without-system-xpdf                         \
+#  --without-system-icu                          \
+#  --without-system-fontconfig                   \
+#  --without-system-freetype2                    \
+#  --without-system-libpng                       \
+#  --without-system-zlib                         \
+#  --with-fontconfig-includes=$ROOT/$FONTCONFIG_SOURCE_NAME        \
+#  --with-fontconfig-libdir="$PREFIX/lib"                          \
+#  --with-banner-add="_BLFS" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
+#
+#$EMMAKE make $MAKEFLAGS 
+#$EMMAKE make $MAKEFLAGS install
+#
+#pushd texk/dvipdfm-x
+#$EMMAKE make $MAKEFLAGS 
+#popd
 
 echo "BEGIN FREETYPE"
 pushd libs/freetype2
+mkdir -p ft-build
+
+CXX="bash -c '[[ $1 == *apinames ]] && true || em++ $@'"
+
 #$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/freetype2/ft-build/apinames $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ft-build
-$EMMAKE make $MAKEFLAGS -o ft-build/apinames CFLAGS="$CFLAGS"
+$EMMAKE make $MAKEFLAGS -o $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/freetype2/ft-build/apinames -o ft-build/apinames CXX="$CXX"
 popd
 echo "END FREETYPE"
-
 
 exit 1
 
