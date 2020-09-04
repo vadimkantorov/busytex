@@ -1,0 +1,31 @@
+<html><body>
+
+<script src="xelatex.js"></script>
+<script>
+var Module = {
+  'noInitialRun' : true,
+  'thisProgram': 'cwd/xelatex',
+  'preInit': function() {
+    if (ENVIRONMENT_IS_NODE) {
+      FS.writeFile('/hello_world.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
+      FS.mkdir('cwd');
+      FS.mount(NODEFS, {'root': '.'}, 'cwd');
+    }
+  },
+  'preRun': function() {
+    if (ENVIRONMENT_IS_NODE) {
+      if (process.env['KPATHSEA_DEBUG']) {
+        ENV['KPATHSEA_DEBUG'] = process.env['KPATHSEA_DEBUG'];
+      }
+      ENV['TEXMFDIST'] = 'cwd/texlive-{basic,small,full}/texmf-dist:';
+      ENV['TEXMFCNF'] = 'cwd:cwd/texlive-{basic,small,full}:cwd/texlive-{basic,small,full}/texmf-dist/web2c:';
+      ENV['TEXINPUTS'] = 'cwd:';
+      ENV['TEXFORMATS'] = 'cwd:';
+    }
+  }
+};
+
+Module.callMain(['/hello_world.tex']);
+</script>
+
+</body></html>
