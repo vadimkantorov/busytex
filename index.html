@@ -26,6 +26,13 @@ var Module = {
 };
 
 Module.callMain(['/hello_world.tex']);
+var pdfBlob = new Blob([pdfData], {type: 'application/pdf'});
+var previewUrl = URL.createObjectURL(pdfBlob);
+var previewIFrame = document.getElementById('preview');
+previewIFrame.src = previewUrl;
+
 </script>
+
+<iframe id="preview"></iframe>
 
 </body></html>

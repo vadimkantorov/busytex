@@ -82,10 +82,6 @@ $EMCONFIGURE ../configure                                    \
 $EMMAKE make $MAKEFLAGS 
 $EMMAKE make $MAKEFLAGS install
 
-pushd libs/icu/include/unicode
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
-popd
-
 pushd texk/dvipdfm-x
 $EMMAKE make $MAKEFLAGS 
 popd
@@ -99,7 +95,7 @@ popd
 echo "END FREETYPE"
 
 echo BEFORE LIBS
-for f in teckit harfbuzz graphite2 libpng zlib pplib icu; do
+for f in teckit harfbuzz graphite2 libpng zlib pplib icu icu/include/unicode; do
     pushd libs/$f
     $EMMAKE make $MAKEFLAGS
     popd
