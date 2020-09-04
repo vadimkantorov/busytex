@@ -2,12 +2,38 @@
 
 <script src="xelatex.js"></script>
 <script>
+
+const basename = name => {
+  var lastSlash = name.lastIndexOf('/');
+  var lastDot = name.lastIndexOf('.');
+  if (lastDot === -1) {
+    return name;
+  }
+  if (lastSlash < lastDot) {
+    return name.slice(0, lastDot);
+  }
+  return name;
+};
+
+const splitPath = name => {
+  var lastSlash = name.lastIndexOf('/');
+  if (lastSlash === -1) {
+    return ['', name];
+  }
+  // trim trailing slashes from the head part
+  var i;
+  for (i = lastSlash - 1; i > 0 && name.charAt(i) === '/'; i--) {
+    // no-op
+  }
+  return [name.slice(0, i), name.slice(lastSlash + 1)];
+};
+
 var Module = {
   'noInitialRun' : true,
   'thisProgram': 'cwd/xelatex',
   'preInit': function() {
     if (ENVIRONMENT_IS_NODE) {
-      FS.writeFile('/hello_world.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
+      FS.writeFile('/source.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
       FS.mkdir('cwd');
       FS.mount(NODEFS, {'root': '.'}, 'cwd');
     }
@@ -25,11 +51,35 @@ var Module = {
   }
 };
 
-Module.callMain(['/hello_world.tex']);
-var pdfBlob = new Blob([pdfData], {type: 'application/pdf'});
-var previewUrl = URL.createObjectURL(pdfBlob);
-var previewIFrame = document.getElementById('preview');
-previewIFrame.src = previewUrl;
+const texLiveManifestUrl = 'texlive.lst';
+const virtualTexLiveRootDir = 'texlive';
+const xelatexFmtUrl = 'xelatex.fmt';
+
+const texMfCnfContent = `TEXMFDIST = /${virtualTexLiveRootDir}/texmf-dist\n` +
+  `TEXMFLOCAL = /${virtualTexLiveRootDir}/texmf-local\n` +
+  `TEXMFCONFIG = /${virtualTexLiveRootDir}/texmf-config\n` +
+  'TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!$TEXMFCONFIG}\n';
+
+FS.createPath('/', virtualTexLiveRootDir, true, true);
+
+// process texlive.lst
+// FS.createPath('/', vdir, true, true);
+// FS.createLazyFile(vdir, filename, location, true, false);
+
+FS.createPath('/', 'share/texmf-dist/web2c/', true, true);
+FS.createLazyFile('/share/texmf-dist/web2c/', 'texmf.cnf', location, true, false);
+FS.createDataFile('/', 'texmf.cnf', texMfCnfContent, [texMfCnfContent.buffer], true),
+FS.createLazyFile('/', 'xelatex.fmt', xelatexFmtUrl, true, false);
+
+sourcePath = 'source.tex';
+outputPath = basename(sourcePath) + '.xdv';
+Module.callMain(['-interaction=nonstopmode', '-no-pdf', '--', sourcePath]);
+const xdvData = FS.readFile(outputPath, {encoding: 'binary'});
+console.log(xdvData);
+//var pdfBlob = new Blob([pdfData], {type: 'application/pdf'});
+//var previewUrl = URL.createObjectURL(pdfBlob);
+//var previewIFrame = document.getElementById('preview');
+//previewIFrame.src = previewUrl;
 
 </script>
 

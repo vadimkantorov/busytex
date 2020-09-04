@@ -88,11 +88,14 @@ popd
 
 echo "BEGIN FREETYPE"
 pushd libs/freetype2
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
+#$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/freetype2/ft-build/apinames $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ft-build
-$EMMAKE make $MAKEFLAGS -o apinames CFLAGS="$CFLAGS"
+$EMMAKE make $MAKEFLAGS -o ft-build/apinames CFLAGS="$CFLAGS"
 popd
 echo "END FREETYPE"
+
+
+exit 1
 
 echo BEFORE LIBS
 for f in teckit harfbuzz graphite2 libpng zlib pplib icu icu/include/unicode; do
