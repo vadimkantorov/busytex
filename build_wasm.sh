@@ -79,15 +79,15 @@ $EMCONFIGURE ../configure                                    \
   --with-fontconfig-libdir="$PREFIX/lib"                          \
   --with-banner-add="_BLFS" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
 
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS" install
+$EMMAKE make $MAKEFLAGS 
+$EMMAKE make $MAKEFLAGS install
 
 pushd libs/icu/include/unicode
 $EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
 popd
 
 pushd texk/dvipdfm-x
-$EMMAKE make $MAKEFLAGS CFLAGS="$CFLAGS"
+$EMMAKE make $MAKEFLAGS 
 popd
 
 echo "BEGIN FREETYPE"
@@ -145,12 +145,12 @@ patch -d .. -Np1 -i $ROOT/0002-fix-fcstats-emscripten.patch
 echo 'all install:' > ../test/Makefile.in
 FREETYPE_CFLAGS="-I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/freetype2"
 FREETYPE_LIBS="-L$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/freetype2/ -lfreetype"
-EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig CFLAGS=-Duuid_generate_random=uuid_generate FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" $EMCONFIGURE ../configure \
+EM_PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig $EMCONFIGURE ../configure \
     --cache-file $ROOT/config-fontconfig-wasm.cache \
     --prefix=$PREFIX \
     --enable-static \
     --disable-shared \
-    --disable-docs 
+    --disable-docs FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" CFLAGS="-Duuid_generate_random=uuid_generate" 
 $EMMAKE make $MAKEFLAGS 
 $EMMAKE make $MAKEFLAGS install
 
