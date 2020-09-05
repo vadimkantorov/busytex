@@ -28,29 +28,6 @@ const splitPath = name => {
   return [name.slice(0, i), name.slice(lastSlash + 1)];
 };
 
-var Module = {
-  'noInitialRun' : true,
-  'thisProgram': 'cwd/xelatex',
-  'preInit': function() {
-    if (ENVIRONMENT_IS_NODE) {
-      FS.writeFile('/source.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
-      FS.mkdir('cwd');
-      FS.mount(NODEFS, {'root': '.'}, 'cwd');
-    }
-  },
-  'preRun': function() {
-    if (ENVIRONMENT_IS_NODE) {
-      if (process.env['KPATHSEA_DEBUG']) {
-        ENV['KPATHSEA_DEBUG'] = process.env['KPATHSEA_DEBUG'];
-      }
-      ENV['TEXMFDIST'] = 'cwd/texlive-{basic,small,full}/texmf-dist:';
-      ENV['TEXMFCNF'] = 'cwd:cwd/texlive-{basic,small,full}:cwd/texlive-{basic,small,full}/texmf-dist/web2c:';
-      ENV['TEXINPUTS'] = 'cwd:';
-      ENV['TEXFORMATS'] = 'cwd:';
-    }
-  }
-};
-
 const texLiveManifestUrl = 'texlive.lst';
 const virtualTexLiveRootDir = 'texlive';
 const xelatexFmtUrl = 'xelatex.fmt';
@@ -70,6 +47,9 @@ FS.createPath('/', 'share/texmf-dist/web2c/', true, true);
 FS.createLazyFile('/share/texmf-dist/web2c/', 'texmf.cnf', location, true, false);
 FS.createDataFile('/', 'texmf.cnf', texMfCnfContent, [texMfCnfContent.buffer], true),
 FS.createLazyFile('/', 'xelatex.fmt', xelatexFmtUrl, true, false);
+
+FS.writeFile('/source.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
+FS.mkdir('cwd');
 
 sourcePath = 'source.tex';
 outputPath = basename(sourcePath) + '.xdv';
