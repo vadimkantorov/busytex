@@ -1,6 +1,8 @@
-<html><body>
+<html><body style="width: 100%; height: 100%">
 
-<script src="xelatex.js"></script>
+<div><iframe style="width: 100%; height:50%" id="preview"></iframe></div>
+<div><textarea style="width: 100%; height: 50%" id="status"></textarea></div>
+
 <script>
 
 const basename = name => {
@@ -28,47 +30,86 @@ const splitPath = name => {
   return [name.slice(0, i), name.slice(lastSlash + 1)];
 };
 
+let statusElement = document.getElementById('status');
+let previewElement = document.getElementById('preview');
+
 const texLiveManifestUrl = 'texlive.lst';
-const virtualTexLiveRootDir = 'texlive';
-const xelatexFmtUrl = 'xelatex.fmt';
+const texliveRoot = '/texlive';
+const xelatexFmtPath = '/xelatex.fmt';
+const sourcePath = '/source.tex';
+const outputPath = '/source.xdv';
+const texliveCnf = '/texmf.cnf';
+const xelatex = '/xelatex';
 
-const texMfCnfContent = `TEXMFDIST = /${virtualTexLiveRootDir}/texmf-dist\n` +
-  `TEXMFLOCAL = /${virtualTexLiveRootDir}/texmf-local\n` +
-  `TEXMFCONFIG = /${virtualTexLiveRootDir}/texmf-config\n` +
-  'TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!$TEXMFCONFIG}\n';
+ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 
-FS.createPath('/', virtualTexLiveRootDir, true, true);
+function main(Module)
+{
+    FS.writeFile(xelatex, '', {encoding: 'utf-8'});
 
-// process texlive.lst
-// FS.createPath('/', vdir, true, true);
-// FS.createLazyFile(vdir, filename, location, true, false);
+    FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
 
-FS.createPath('/', 'share/texmf-dist/web2c/', true, true);
-FS.createLazyFile('/share/texmf-dist/web2c/', 'texmf.cnf', location, true, false);
-FS.createDataFile('/', 'texmf.cnf', texMfCnfContent, [texMfCnfContent.buffer], true),
-FS.createLazyFile('/', 'xelatex.fmt', xelatexFmtUrl, true, false);
+    const texMfCnfContent = `TEXMFDIST = ${texliveRoot}/texmf-dist
+      TEXMFLOCAL = ${texliveRoot}/texmf-local
+      TEXMFCONFIG = ${texliveRoot}/texmf-config
+      TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!$TEXMFCONFIG}`;
 
+    FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
+    
+    ls('/');
+    
+    Module.callMain(['--interaction=nonstopmode', '--no-pdf', '--fmt=' + xelatexFmtPath, '--', sourcePath]);
 
-//ENV['TEXMFDIST'] = 'cwd/texlive-{basic,small,full}/texmf-dist:';
-//ENV['TEXMFCNF'] = 'cwd:cwd/texlive-{basic,small,full}:cwd/texlive-{basic,small,full}/texmf-dist/web2c:';
-//ENV['TEXINPUTS'] = 'cwd:';
-//ENV['TEXFORMATS'] = 'cwd:';
+    ls('/');
+    
+    //const xdvData = FS.readFile(outputPath, {encoding: 'binary'});
+    //console.log(xdvData);
+    //previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
+};
 
-FS.writeFile('/source.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
-FS.mkdir('cwd');
+var Module = 
+{
+    thisProgram : xelatex, 
 
-sourcePath = 'source.tex';
-outputPath = basename(sourcePath) + '.xdv';
-Module.callMain(['-interaction=nonstopmode', '-no-pdf', '--', sourcePath]);
-const xdvData = FS.readFile(outputPath, {encoding: 'binary'});
-console.log(xdvData);
-//var pdfBlob = new Blob([pdfData], {type: 'application/pdf'});
-//var previewUrl = URL.createObjectURL(pdfBlob);
-//var previewIFrame = document.getElementById('preview');
-//previewIFrame.src = previewUrl;
+    noInitialRun : true,
+    
+    onRuntimeInitialized()
+    {
+        main(Module);
+    },
+    
+    print(text) 
+    {
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        console.log(text);
+    },
 
+    printErr(text)
+    {
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        console.error(text);
+    },
+    
+    setStatus(text)
+    {
+        statusElement.value += (this.statusPrefix || '') + text + '\n';
+        statusElement.scrollTop = statusElement.scrollHeight;
+    },
+    
+    monitorRunDependencies(left)
+    {
+        this.totalDependencies = Math.max(this.totalDependencies, left);
+        Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+    },
+    
+    totalDependencies: 0,
+};
+Module.setStatus('Downloading Emscripten...');
+window.onerror = () => { Module.statusPrefix = '[post-exception] ';};
 </script>
 
-<iframe id="preview"></iframe>
+</script>
+<script async type="text/javascript" src="texlive.js"></script>
+<script async type="text/javascript" src="xelatex.js"></script>
 
 </body></html>
