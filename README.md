@@ -15,4 +15,5 @@ bash build_wasm.sh
 ### Versions
 ```shell
 emsdk install 2.0.0 # 5974288502aab433d45f53511e961aaca4079d86
+emsdk activate 2.0.0
 ```

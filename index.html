@@ -48,6 +48,12 @@ FS.createLazyFile('/share/texmf-dist/web2c/', 'texmf.cnf', location, true, false
 FS.createDataFile('/', 'texmf.cnf', texMfCnfContent, [texMfCnfContent.buffer], true),
 FS.createLazyFile('/', 'xelatex.fmt', xelatexFmtUrl, true, false);
 
+
+//ENV['TEXMFDIST'] = 'cwd/texlive-{basic,small,full}/texmf-dist:';
+//ENV['TEXMFCNF'] = 'cwd:cwd/texlive-{basic,small,full}:cwd/texlive-{basic,small,full}/texmf-dist/web2c:';
+//ENV['TEXINPUTS'] = 'cwd:';
+//ENV['TEXFORMATS'] = 'cwd:';
+
 FS.writeFile('/source.tex', '\\documentclass{article}\\begin{document}Hello, world!\\end{document}'); 
 FS.mkdir('cwd');
 

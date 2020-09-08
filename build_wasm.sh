@@ -35,6 +35,7 @@ EMCCSKIP_FREETYPE="python3 $ROOT/ccskip.py $TEXLIVE_SOURCE_DIR/texlive-build-nat
 EMCCSKIP_XETEX="python3 $ROOT/ccskip.py $WEB2C_NATIVE_TOOLS_DIR/ctangle $WEB2C_NATIVE_TOOLS_DIR/ctangleboot $WEB2C_NATIVE_TOOLS_DIR/web2c/fixwrites $WEB2C_NATIVE_TOOLS_DIR/web2c/splitup $WEB2C_NATIVE_TOOLS_DIR/tangle $WEB2C_NATIVE_TOOLS_DIR/tangleboot $WEB2C_NATIVE_TOOLS_DIR/tie $WEB2C_NATIVE_TOOLS_DIR/web2c/web2c $WEB2C_NATIVE_TOOLS_DIR/otangle $WEB2C_NATIVE_TOOLS_DIR/web2c/makecpool $WEB2C_NATIVE_TOOLS_DIR/xetex --"
 EMCCFLAGS_FONTCONFIG="-Duuid_generate_random=uuid_generate"
 EMCCFLAGS_TEXLIVE="-s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE"
+EMCCFLAGS_EXPAT="-s USE_PTHREADS=0 -s NO_FILESYSTEM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1"
 
 
 mkdir -p $PREFIX $PREFIX/bin
@@ -46,8 +47,8 @@ cd $TEXLIVE_SOURCE_DIR
 
 #mv texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools $BACKUP/texk || true
 
-mkdir -p texlive-build-$SUFFIX
-cd texlive-build-$SUFFIX
+mkdir -p $TEXLIVE_BUILD_DIR
+cd $TEXLIVE_BUILD_DIR
 
 echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
 echo > $FONTCONFIG_CACHE
@@ -84,9 +85,6 @@ $EMCONFIGURE ../configure                       \
   --without-system-zlib                         \
   --with-banner-add="_EM" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
 
-#  --with-fontconfig-includes="$ROOT/$FONTCONFIG_SOURCE_NAME"                         \
-#  --with-fontconfig-libdir="$ROOT/$FONTCONFIG_SOURCE_NAME/build-$SUFFIX/src/.libs"   \
-
 $EMMAKE make $MAKEFLAGS 
 $EMMAKE make $MAKEFLAGS install
 
@@ -101,7 +99,6 @@ $EMMAKE make $MAKEFLAGS CC="$EMCCSKIP_FREETYPE emcc"
 popd
 
 pushd libs/icu/icu-build
-#CXX="em++ -s ERROR_ON_UNDEFINED_SYMBOLS=0"
 mkdir -p bin stubdata lib
 cp $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/stubdata/libicudata.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/stubdata/
 cp --preserve=mode $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/bin/icupkg $TEXLIVE_SOURCE_DIR/texlive-build-native/libs/icu/icu-build/bin/pkgdata $TEXLIVE_BUILD_DIR/libs/icu/icu-build/bin/
@@ -118,7 +115,7 @@ tar -xf $(basename $EXPAT_SOURCE_URL)
 mkdir -p $EXPAT_BUILD_DIR
 cd $EXPAT_BUILD_DIR
 $EMCMAKE cmake \
-    -DCMAKE_C_FLAGS="-s USE_PTHREADS=0 -s NO_FILESYSTEM=1 -s NO_EXIT_RUNTIME=1 -s MODULARIZE=1" \
+    -DCMAKE_C_FLAGS="$EMCCFLAGS_EXPAT" \
     -DCMAKE_INSTALL_PREFIX=$PREFIX \
     -DEXPAT_BUILD_DOCS=off \
     -DEXPAT_SHARED_LIBS=off \
@@ -151,9 +148,9 @@ $EMCONFIGURE ../configure \
 $EMMAKE make $MAKEFLAGS 
 
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
-$EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP em++"
+$EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP_XETEX em++"
 
 XETEX_OBJECTS="xetexdir/xetex-xetexextra.o synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o libxetex.a"
-XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/libs/graphite2/libgraphite2.a $TEXLIVE_BUILD_DIR/libs/teckit/libTECkit.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/freetype2/libfreetype.a $TEXLIVE_BUILD_DIR/libs/pplib/libpplib.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a libmd5.a lib/lib.a $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $FONTCONFIG_BUILD_DIR/src/.libs/libfontconfig.a $EXPAT_BUILD_DIR/libexpat.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicuuc.a"
+XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/libs/graphite2/libgraphite2.a $TEXLIVE_BUILD_DIR/libs/teckit/libTECkit.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/freetype2/libfreetype.a $TEXLIVE_BUILD_DIR/libs/pplib/libpplib.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a libmd5.a lib/lib.a $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $FONTCONFIG_BUILD_DIR/src/.libs/libfontconfig.a $EXPAT_BUILD_DIR/libexpat.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicuuc.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/stubdata/libicudata.a"
 
 em++ -g -O2 -o xetex $XETEX_OBJECTS $XETEX_DEPS -s ERROR_ON_UNDEFINED_SYMBOLS=0
