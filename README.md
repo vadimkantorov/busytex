@@ -1,4 +1,4 @@
-# [WIP] Build a minimal XeTeX from source in TexLive 2020
+# [WIP] [DOESNTWORKYET] TexLive 2020 compiled with Emscripten into WebAssembly and bundled into a single executable
 
 ```shell
 
