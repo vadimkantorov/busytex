@@ -33,11 +33,10 @@ const splitPath = name => {
 let statusElement = document.getElementById('status');
 let previewElement = document.getElementById('preview');
 
-const texLiveManifestUrl = 'texlive.lst';
 const texliveRoot = '/texlive';
 const xelatexFmtPath = '/xelatex.fmt';
-const sourcePath = '/source.tex';
-const outputPath = '/source.xdv';
+const sourcePath = '/home/web_user/source.tex';
+const outputPath = '/home/web_user/source.xdv';
 const texliveCnf = '/texmf.cnf';
 const xelatex = '/xelatex';
 
@@ -45,22 +44,31 @@ ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 
 function main(Module)
 {
+    FS.chdir('/home/web_user');
     FS.writeFile(xelatex, '', {encoding: 'utf-8'});
 
     FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
 
-    const texMfCnfContent = `TEXMFDIST = ${texliveRoot}/texmf-dist
-      TEXMFLOCAL = ${texliveRoot}/texmf-local
-      TEXMFCONFIG = ${texliveRoot}/texmf-config
-      TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!$TEXMFCONFIG}`;
-
-    FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
+    //const texMfCnfContent = `
+    //  TEXDIR = ${texliveRoot}
+    //  TEXMFDIST = ${texliveRoot}/texmf-dist
+    //  TEXMFLOCAL = ${texliveRoot}/texmf-local
+    //  TEXMFCONFIG = ${texliveRoot}/texmf-config
+    //  TEXMFSYSCONFIG = ${texliveRoot}/texmf-config
+    //  TEXMFVAR = /home/web_user
+    //  TEXMFOUTPUT = /home/web_user
+    //  TEXMFSYSVAR = /home/web_user
+    //  TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!TEXMFCONFIG}`;
+    //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
+    //ENV['KPATHSEA_DEBUG'] = '1';
     
-    ls('/');
-    
-    Module.callMain(['--interaction=nonstopmode', '--no-pdf', '--fmt=' + xelatexFmtPath, '--', sourcePath]);
+    ENV['TEXMFDIST'] = '/texlive/texmf-dist:';
 
-    ls('/');
+    ls('.');
+    
+    Module.callMain(['--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname', sourcePath]);
+
+    ls('.');
     
     //const xdvData = FS.readFile(outputPath, {encoding: 'binary'});
     //console.log(xdvData);
