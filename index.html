@@ -62,11 +62,14 @@ function main(Module)
     //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
     //ENV['KPATHSEA_DEBUG'] = '1';
     
-    ENV['TEXMFDIST'] = '/texlive/texmf-dist:';
-
-    ls('.');
     
-    Module.callMain(['--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname', sourcePath]);
+    ls('.');
+    //ENV.TEXMFDIST = '/texlive/texmf-dist:';
+    //ENV['FC_DEBUG'] = '1';
+    //ENV.FONTCONFIG_PATH = '/';
+    //ENVFONTCONFIG_FILE = 'texlive-fontconfig.conf';
+    
+    Module.callMain(['--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
 
     ls('.');
     
@@ -80,7 +83,15 @@ var Module =
     thisProgram : xelatex, 
 
     noInitialRun : true,
-    
+
+    preRun : [(() =>
+    {
+        ENV.TEXMFDIST = '/texlive/texmf-dist:';
+        //ENV['FC_DEBUG'] = '1';
+        ENV.FONTCONFIG_PATH = '/fontconfig';
+        ENV.FONTCONFIG_FILE = 'texlive-fontconfig.conf';
+    })],
+
     onRuntimeInitialized()
     {
         main(Module);

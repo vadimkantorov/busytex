@@ -153,26 +153,28 @@ cd $TEXLIVE_SOURCE_DIR
 #    --with-expat-lib="$EXPAT_BUILD_DIR" \
 #    FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" 
 #$EMMAKE make $MAKEFLAGS 
-#
+# --sysconfdir=/etc --localstatedir=/var
+# --with-default-fonts=/fonts \
+
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
 #$EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP_XETEX em++"
 
-XETEX_OBJECTS="xetexdir/xetex-xetexextra.o synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o libxetex.a"
-XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/libs/graphite2/libgraphite2.a $TEXLIVE_BUILD_DIR/libs/teckit/libTECkit.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/freetype2/libfreetype.a $TEXLIVE_BUILD_DIR/libs/pplib/libpplib.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a libmd5.a lib/lib.a $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $FONTCONFIG_BUILD_DIR/src/.libs/libfontconfig.a $EXPAT_BUILD_DIR/libexpat.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicuuc.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicudata.a" 
-
-
-
-pushd $TEXLIVE_BUILD_DIR/texk/web2c
-# /mnt/c/Users/user/xetex2020.js/texlive-source-9ed922e7d25e41b066f9e6c973581a4e61ac0328/texlive-build-wasm/texk/web2c/xetex0.c
-
-cp $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/xetex0.c $TEXLIVE_BUILD_DIR/texk/web2c
-
-#emcc -DHAVE_CONFIG_H -I. -I../../../texk/web2c -I./w2c  -I$TEXLIVE_BUILD_DIR/texk -I$TEXLIVE/texk -I../../../texk/web2c/xetexdir  -I$TEXLIVE_BUILD_DIR/libs/freetype2/freetype2 -I$TEXLIVE_BUILD_DIR/libs/teckit/include -I$TEXLIVE_BUILD_DIR/libs/harfbuzz/include -I$TEXLIVE_BUILD_DIR/libs/graphite2/include -DGRAPHITE2_STATIC -I$TEXLIVE_BUILD_DIR/libs/libpng/include -I$TEXLIVE_BUILD_DIR/libs/zlib/include -I$TEXLIVE_BUILD_DIR/libs/pplib/include -I../../../texk/web2c/libmd5   -I../../../texk/web2c/synctexdir -D__SyncTeX__ -DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I/mnt/c/Users/user/xetex2020.js/fontconfig-2.13.1 -Wimplicit -Wreturn-type -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 -MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
+pushd $TEXLIVE_BUILD_DIR/texk/dvipdfm-x/
+em++ -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -Wimplicit -Wreturn-type -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1   -o xdvipdfmx agl.o bmpimage.o cff.o cff_dict.o cid.o cidtype0.o cidtype2.o cmap.o cmap_read.o cmap_write.o cs_type2.o dpxconf.o dpxcrypt.o dpxfile.o dpxutil.o dvi.o dvipdfmx.o epdf.o error.o fontmap.o jp2image.o jpegimage.o mem.o mfileio.o mpost.o mt19937ar.o numbers.o otl_opt.o pdfcolor.o pdfdev.o pdfdoc.o pdfdraw.o pdfencrypt.o pdfencoding.o pdffont.o pdfnames.o pdfobj.o pdfparse.o pdfresource.o pdfximage.o pkfont.o pngimage.o pst.o pst_obj.o sfnt.o spc_color.o spc_dvipdfmx.o spc_dvips.o spc_html.o spc_misc.o spc_pdfm.o spc_tpic.o spc_util.o spc_xtx.o specials.o subfont.o t1_char.o t1_load.o tfm.o truetype.o tt_aux.o tt_cmap.o tt_glyf.o tt_gsub.o tt_post.o tt_table.o type0.o type1.o type1c.o unicode.o vf.o xbb.o $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm 
 popd
 
-#em++ -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' -s TOTAL_MEMORY=536870912 -o $ROOT/xelatex.js $XETEX_OBJECTS $XETEX_DEPS -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0
+exit 1
 
-python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4 --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js
+pushd $TEXLIVE_BUILD_DIR/texk/web2c
+cp $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/xetex0.c $TEXLIVE_BUILD_DIR/texk/web2c
+emcc -DHAVE_CONFIG_H -I. -I../../../texk/web2c -I./w2c  -I$TEXLIVE_BUILD_DIR/texk -I$TEXLIVE_SOURCE_DIR/texk -I../../../texk/web2c/xetexdir  -I$TEXLIVE_BUILD_DIR/libs/freetype2/freetype2 -I$TEXLIVE_BUILD_DIR/libs/teckit/include -I$TEXLIVE_BUILD_DIR/libs/harfbuzz/include -I$TEXLIVE_BUILD_DIR/libs/graphite2/include -DGRAPHITE2_STATIC -I$TEXLIVE_BUILD_DIR/libs/libpng/include -I$TEXLIVE_BUILD_DIR/libs/zlib/include -I$TEXLIVE_BUILD_DIR/libs/pplib/include -I../../../texk/web2c/libmd5   -I../../../texk/web2c/synctexdir -D__SyncTeX__ -DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I/mnt/c/Users/user/xetex2020.js/fontconfig-2.13.1 -Wimplicit -Wreturn-type -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 -MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
+popd
+
+XETEX_OBJECTS="xetexdir/xetex-xetexextra.o synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o libxetex.a"
+XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/libs/graphite2/libgraphite2.a $TEXLIVE_BUILD_DIR/libs/teckit/libTECkit.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/freetype2/libfreetype.a $TEXLIVE_BUILD_DIR/libs/pplib/libpplib.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a libmd5.a lib/lib.a $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $FONTCONFIG_BUILD_DIR/src/.libs/libfontconfig.a $EXPAT_BUILD_DIR/libexpat.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicuuc.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicudata.a" 
+em++ -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' -s TOTAL_MEMORY=536870912 -o $ROOT/xelatex.js $XETEX_OBJECTS $XETEX_DEPS -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0
+
+python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4 --preload "$ROOT/fontconfig@/fontconfig" --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js
 
 # https://askubuntu.com/questions/492033/fontconfig-error-cannot-load-default-config-file
 # https://github.com/Dador/JavascriptSubtitlesOctopus/blob/master/Makefile#L216
