@@ -54,65 +54,65 @@ cd $TEXLIVE_SOURCE_DIR
 mkdir -p $TEXLIVE_BUILD_DIR
 cd $TEXLIVE_BUILD_DIR
 
-#echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
-#echo > $FONTCONFIG_CACHE
-#CFLAGS="$EMCCFLAGS_TEXLIVE -DELIDE_CODE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
-#$EMCONFIGURE ../configure                       \
-#  --cache-file=$TEXLIVE_CACHE                   \
-#  --prefix=$PREFIX                              \
-#  --enable-dump-share                           \
-#  --enable-static                               \
-#  --enable-xetex                                \
-#  --enable-dvipdfm-x                            \
-#  --enable-icu                                  \
-#  --enable-freetype2                            \
-#  --disable-shared                              \
-#  --disable-multiplatform                       \
-#  --disable-native-texlive-build                \
-#  --disable-all-pkgs                            \
-#  --without-x                                   \
-#  --without-system-cairo                        \
-#  --without-system-gmp                          \
-#  --without-system-graphite2                    \
-#  --without-system-harfbuzz                     \
-#  --without-system-libgs                        \
-#  --without-system-libpaper                     \
-#  --without-system-mpfr                         \
-#  --without-system-pixman                       \
-#  --without-system-poppler                      \
-#  --without-system-xpdf                         \
-#  --without-system-icu                          \
-#  --without-system-fontconfig                   \
-#  --without-system-freetype2                    \
-#  --without-system-libpng                       \
-#  --without-system-zlib                         \
-#  --with-banner-add="_EM" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
-#
-#$EMMAKE make $MAKEFLAGS 
-#$EMMAKE make $MAKEFLAGS install
-#
-## rename extern symbols
-#pushd texk/dvipdfm-x
-#$EMMAKE make clean
-#$EMMAKE make $MAKEFLAGS CC="emcc $CFLAGS_DVIPDFMX" CXX="em++ $CFLAGS_DVIPDFMX"
-#popd
-#
-##TODO: remove libs/icu? libs/icu libs/icu/include/unicode
-#for d in libs/teckit libs/harfbuzz libs/graphite2 libs/libpng libs/zlib libs/pplib; do
-#    pushd $d
-#    $EMMAKE make $MAKEFLAGS
-#    popd
-#done
+echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
+echo > $FONTCONFIG_CACHE
+CFLAGS="$EMCCFLAGS_TEXLIVE -DELIDE_CODE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
+$EMCONFIGURE ../configure                       \
+  --cache-file=$TEXLIVE_CACHE                   \
+  --prefix=$PREFIX                              \
+  --enable-dump-share                           \
+  --enable-static                               \
+  --enable-xetex                                \
+  --enable-dvipdfm-x                            \
+  --enable-icu                                  \
+  --enable-freetype2                            \
+  --disable-shared                              \
+  --disable-multiplatform                       \
+  --disable-native-texlive-build                \
+  --disable-all-pkgs                            \
+  --without-x                                   \
+  --without-system-cairo                        \
+  --without-system-gmp                          \
+  --without-system-graphite2                    \
+  --without-system-harfbuzz                     \
+  --without-system-libgs                        \
+  --without-system-libpaper                     \
+  --without-system-mpfr                         \
+  --without-system-pixman                       \
+  --without-system-poppler                      \
+  --without-system-xpdf                         \
+  --without-system-icu                          \
+  --without-system-fontconfig                   \
+  --without-system-freetype2                    \
+  --without-system-libpng                       \
+  --without-system-zlib                         \
+  --with-banner-add="_EM" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
 
-#pushd libs/freetype2
-#$EMMAKE make $MAKEFLAGS CC="$EMCCSKIP_FREETYPE emcc"
-#popd
-#
-#pushd libs/icu
-#$EMCONFIGURE $TEXLIVE_SOURCE_DIR/libs/icu/configure CC="$EMCCSKIP_ICU emcc $EMCCFLAGS_ICU" CXX="$EMCCSKIP_ICU em++ $EMCCFLAGS_ICU"
-#echo 'all install:' > $TEXLIVE_BUILD_DIR/libs/icu/icu-build/test/Makefile
-#$EMMAKE make $MAKEFLAGS -e PKGDATA_OPTS="--without-assembly -O $TEXLIVE_BUILD_DIR/libs/icu/icu-build/data/icupkg.inc" -e CC="$EMCCSKIP_ICU emcc $CFLAGS" -e CXX="$EMCCSKIP_ICU em++ $CFLAGS"
-#popd
+$EMMAKE make $MAKEFLAGS 
+$EMMAKE make $MAKEFLAGS install
+
+# rename extern symbols
+pushd texk/dvipdfm-x
+$EMMAKE make clean
+$EMMAKE make $MAKEFLAGS CC="emcc $CFLAGS_DVIPDFMX" CXX="em++ $CFLAGS_DVIPDFMX"
+popd
+
+#TODO: remove libs/icu? libs/icu libs/icu/include/unicode
+for d in libs/teckit libs/harfbuzz libs/graphite2 libs/libpng libs/zlib libs/pplib; do
+    pushd $d
+    $EMMAKE make $MAKEFLAGS
+    popd
+done
+
+pushd libs/freetype2
+$EMMAKE make $MAKEFLAGS CC="$EMCCSKIP_FREETYPE emcc"
+popd
+
+pushd libs/icu
+$EMCONFIGURE $TEXLIVE_SOURCE_DIR/libs/icu/configure CC="$EMCCSKIP_ICU emcc $EMCCFLAGS_ICU" CXX="$EMCCSKIP_ICU em++ $EMCCFLAGS_ICU"
+echo 'all install:' > $TEXLIVE_BUILD_DIR/libs/icu/icu-build/test/Makefile
+$EMMAKE make $MAKEFLAGS -e PKGDATA_OPTS="--without-assembly -O $TEXLIVE_BUILD_DIR/libs/icu/icu-build/data/icupkg.inc" -e CC="$EMCCSKIP_ICU emcc $CFLAGS" -e CXX="$EMCCSKIP_ICU em++ $CFLAGS"
+popd
 
 cd $ROOT
 wget --no-clobber $EXPAT_SOURCE_URL
@@ -120,15 +120,15 @@ tar -xf $(basename $EXPAT_SOURCE_URL)
 mkdir -p $EXPAT_BUILD_DIR
 cd $EXPAT_BUILD_DIR
 $EMCMAKE cmake \
-    -DCMAKE_C_FLAGS="$EMCCFLAGS_EXPAT" \
-    -DCMAKE_INSTALL_PREFIX=$PREFIX \
-    -DEXPAT_BUILD_DOCS=off \
-    -DEXPAT_SHARED_LIBS=off \
-    -DEXPAT_BUILD_EXAMPLES=off \
-    -DEXPAT_BUILD_FUZZERS=off \
-    -DEXPAT_BUILD_TESTS=off \
-    -DEXPAT_BUILD_TOOLS=off \
-    $EXPAT_SOURCE_DIR 
+   -DCMAKE_C_FLAGS="$EMCCFLAGS_EXPAT" \
+   -DCMAKE_INSTALL_PREFIX=$PREFIX \
+   -DEXPAT_BUILD_DOCS=off \
+   -DEXPAT_SHARED_LIBS=off \
+   -DEXPAT_BUILD_EXAMPLES=off \
+   -DEXPAT_BUILD_FUZZERS=off \
+   -DEXPAT_BUILD_TESTS=off \
+   -DEXPAT_BUILD_TOOLS=off \
+   $EXPAT_SOURCE_DIR 
 $EMMAKE make $MAKEFLAGS 
 
 echo > $FONTCONFIG_CACHE
@@ -142,17 +142,17 @@ echo 'all install:' > $FONTCONFIG_SOURCE_DIR/test/Makefile.in
 FREETYPE_CFLAGS="-I$TEXLIVE_BUILD_DIR/libs/freetype2/ -I$TEXLIVE_BUILD_DIR/libs/freetype2/freetype2"
 FREETYPE_LIBS="-L$TEXLIVE_BUILD_DIR/libs/freetype2/ -lfreetype"
 $EMCONFIGURE $FONTCONFIG_SOURCE_DIR/configure \
-    --cache-file $FONTCONFIG_CACHE \
-    --prefix=$PREFIX \
-    --enable-static \
-    --disable-shared \
-    --disable-docs CFLAGS="$EMCCFLAGS_FONTCONFIG" \
-    --with-expat-includes="$EXPAT_SOURCE_DIR/lib" \
-    --with-expat-lib="$EXPAT_BUILD_DIR" \
-    FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" 
+   --cache-file $FONTCONFIG_CACHE \
+   --prefix=$PREFIX \
+   --enable-static \
+   --disable-shared \
+   --disable-docs CFLAGS="$EMCCFLAGS_FONTCONFIG" \
+   --with-expat-includes="$EXPAT_SOURCE_DIR/lib" \
+   --with-expat-lib="$EXPAT_BUILD_DIR" \
+   FREETYPE_CFLAGS="$FREETYPE_CFLAGS" FREETYPE_LIBS="$FREETYPE_LIBS" 
 $EMMAKE make $MAKEFLAGS 
-# --sysconfdir=/etc --localstatedir=/var
-# --with-default-fonts=/fonts \
+ --sysconfdir=/etc --localstatedir=/var
+ --with-default-fonts=/fonts \
 
 cd $TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/texk/web2c
 $EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP_XETEX em++"
@@ -163,9 +163,9 @@ emcc -DHAVE_CONFIG_H -I. -I../../../texk/web2c -I./w2c  -I$TEXLIVE_BUILD_DIR/tex
 popd
 
 # xdvipdfmx binary
-#pushd $TEXLIVE_BUILD_DIR/texk/dvipdfm-x/
-#em++ -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -Wimplicit -Wreturn-type -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1   -o xdvipdfmx agl.o bmpimage.o cff.o cff_dict.o cid.o cidtype0.o cidtype2.o cmap.o cmap_read.o cmap_write.o cs_type2.o dpxconf.o dpxcrypt.o dpxfile.o dpxutil.o dvi.o dvipdfmx.o epdf.o error.o fontmap.o jp2image.o jpegimage.o mem.o mfileio.o mpost.o mt19937ar.o numbers.o otl_opt.o pdfcolor.o pdfdev.o pdfdoc.o pdfdraw.o pdfencrypt.o pdfencoding.o pdffont.o pdfnames.o pdfobj.o pdfparse.o pdfresource.o pdfximage.o pkfont.o pngimage.o pst.o pst_obj.o sfnt.o spc_color.o spc_dvipdfmx.o spc_dvips.o spc_html.o spc_misc.o spc_pdfm.o spc_tpic.o spc_util.o spc_xtx.o specials.o subfont.o t1_char.o t1_load.o tfm.o truetype.o tt_aux.o tt_cmap.o tt_glyf.o tt_gsub.o tt_post.o tt_table.o type0.o type1.o type1c.o unicode.o vf.o xbb.o $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm 
-#popd
+pushd $TEXLIVE_BUILD_DIR/texk/dvipdfm-x/
+em++ -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -Wimplicit -Wreturn-type -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1   -o xdvipdfmx agl.o bmpimage.o cff.o cff_dict.o cid.o cidtype0.o cidtype2.o cmap.o cmap_read.o cmap_write.o cs_type2.o dpxconf.o dpxcrypt.o dpxfile.o dpxutil.o dvi.o dvipdfmx.o epdf.o error.o fontmap.o jp2image.o jpegimage.o mem.o mfileio.o mpost.o mt19937ar.o numbers.o otl_opt.o pdfcolor.o pdfdev.o pdfdoc.o pdfdraw.o pdfencrypt.o pdfencoding.o pdffont.o pdfnames.o pdfobj.o pdfparse.o pdfresource.o pdfximage.o pkfont.o pngimage.o pst.o pst_obj.o sfnt.o spc_color.o spc_dvipdfmx.o spc_dvips.o spc_html.o spc_misc.o spc_pdfm.o spc_tpic.o spc_util.o spc_xtx.o specials.o subfont.o t1_char.o t1_load.o tfm.o truetype.o tt_aux.o tt_cmap.o tt_glyf.o tt_gsub.o tt_post.o tt_table.o type0.o type1.o type1c.o unicode.o vf.o xbb.o $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm 
+popd
 
 # xetex binary
 #XETEX_OBJECTS="xetexdir/xetex-xetexextra.o synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o libxetex.a"
