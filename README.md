@@ -30,3 +30,17 @@ http://www.readytext.co.uk/?p=3590
 https://github.com/skalogryz/wasmbin
 
 https://ctan.org/tex-archive/systems/unix/tex-fpc?lang=en
+
+https://www.tomaz.me/2014/01/08/detecting-which-process-is-creating-a-file-using-ld-preload-trick.html
+
+http://avf.sourceforge.net/
+
+https://arxiv.org/pdf/1908.10740.pdf
+
+https://github.com/jacereda/fsatrace
+
+https://github.com/fritzw/ld-preload-open/blob/master/path-mapping.c
+
+https://adared.ch/unionfs_by_intercept/
+
+https://gist.github.com/przemoc/571086
