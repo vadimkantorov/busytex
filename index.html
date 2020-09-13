@@ -14,6 +14,7 @@ const sourcePath = '/home/web_user/source.tex';
 const texliveCnf = '/texmf.cnf';
 const xelatex = './xetex';
 const dvipdfmx = './dvipdfmx';
+const busytex = '/bin/busytex';
 
 ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 
@@ -33,21 +34,19 @@ function main(Module)
     //  TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!TEXMFCONFIG}`;
     //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
     //ENV['KPATHSEA_DEBUG'] = '1';
-    
-    FS.writeFile(xelatex, '', {encoding: 'utf-8'});
-    FS.writeFile(dvipdfmx, '', {encoding: 'utf-8'});
 
     FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
-    Module.callMain(['xetex', '--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
-    Module.callMain(['dvipdfmx', 'myjobname.dvi']);
-    const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
+    Module.callMain(['xetex', '--interaction=nonstopmode', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error',  sourcePath]);
+    ls('.');
+    //Module.callMain(['dvipdfmx', 'myjobname.dvi']);
+    //const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
     
-    previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
+    //previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
 };
 
 var Module = 
 {
-    thisProgram : xelatex, 
+    thisProgram : busytex, 
 
     noInitialRun : true,
 
