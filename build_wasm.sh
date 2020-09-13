@@ -44,7 +44,7 @@ EMCCFLAGS_EXPAT="-s USE_PTHREADS=0 -s NO_FILESYSTEM=1 -s NO_EXIT_RUNTIME=1 -s MO
 CFLAGS_DVIPDFMX="-Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png"
 
 
-mkdir -p $PREFIX $PREFIX/bin
+#mkdir -p $PREFIX $PREFIX/bin
 mkdir -p $BACKUP/texk $BACKUP/texk/web2c
 
 wget --no-clobber $TEXLIVE_SOURCE_URL
@@ -56,9 +56,10 @@ cd $TEXLIVE_SOURCE_DIR
 mkdir -p $TEXLIVE_BUILD_DIR
 cd $TEXLIVE_BUILD_DIR
 
+# -DELIDE_CODE 
 echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
 echo > $FONTCONFIG_CACHE
-CFLAGS="$EMCCFLAGS_TEXLIVE -DELIDE_CODE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
+CFLAGS="$EMCCFLAGS_TEXLIVE -I$PREFIX/include -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
 $EMCONFIGURE ../configure                       \
   --cache-file=$TEXLIVE_CACHE                   \
   --prefix=$PREFIX                              \
@@ -184,7 +185,7 @@ XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/li
 O=$TEXLIVE_BUILD_DIR/texk/dvipdfm-x
 DVIPDF_OBJECTS=" $O/agl.o  $O/cff.o $O/cff_dict.o $O/cid.o $O/cidtype0.o $O/cidtype2.o $O/cmap.o $O/cmap_read.o $O/cmap_write.o $O/cs_type2.o $O/dpxconf.o $O/dpxcrypt.o $O/dpxfile.o $O/dpxutil.o $O/dvi.o $O/dvipdfmx.o $O/epdf.o $O/error.o $O/fontmap.o $O/jp2image.o  $O/jpegimage.o $O/bmpimage.o $O/pngimage.o   $O/mfileio.o $O/numbers.o  $O/mem.o $O/mpost.o $O/mt19937ar.o $O/otl_opt.o $O/pdfcolor.o $O/pdfdev.o $O/pdfdoc.o $O/pdfdraw.o $O/pdfencrypt.o $O/pdfencoding.o $O/pdffont.o $O/pdfnames.o $O/pdfobj.o $O/pdfparse.o $O/pdfresource.o $O/pdfximage.o $O/pkfont.o  $O/pst.o $O/pst_obj.o $O/sfnt.o $O/spc_color.o $O/spc_dvipdfmx.o $O/spc_dvips.o $O/spc_html.o $O/spc_misc.o $O/spc_pdfm.o $O/spc_tpic.o $O/spc_util.o $O/spc_xtx.o $O/specials.o $O/subfont.o $O/t1_char.o $O/t1_load.o $O/tfm.o $O/truetype.o $O/tt_aux.o $O/tt_cmap.o $O/tt_glyf.o $O/tt_gsub.o $O/tt_post.o $O/tt_table.o $O/type0.o $O/type1.o $O/type1c.o $O/unicode.o $O/vf.o $O/xbb.o"
 DVIPDF_DEPS="-I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm" 
-emcc -DELIDE_CODE -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' -s TOTAL_MEMORY=536870912 -o $ROOT/busy.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/main.c
+emcc -DELIDE_CODE -g -O2 -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS"]' -s TOTAL_MEMORY=536870912 -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/main.c
 
 # file system
 #python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4 --preload "$ROOT/fontconfig@/fontconfig" --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js

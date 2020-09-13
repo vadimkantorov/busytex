@@ -38,7 +38,8 @@ const xelatexFmtPath = '/xelatex.fmt';
 const sourcePath = '/home/web_user/source.tex';
 const outputPath = '/home/web_user/source.xdv';
 const texliveCnf = '/texmf.cnf';
-const xelatex = '/xelatex';
+const xelatex = './xetex';
+const dvipdfmx = './dvipdfmx';
 
 ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 
@@ -46,6 +47,7 @@ function main(Module)
 {
     FS.chdir('/home/web_user');
     FS.writeFile(xelatex, '', {encoding: 'utf-8'});
+    FS.writeFile(dvipdfmx, '', {encoding: 'utf-8'});
 
     FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
 
@@ -69,13 +71,16 @@ function main(Module)
     //ENV.FONTCONFIG_PATH = '/';
     //ENVFONTCONFIG_FILE = 'texlive-fontconfig.conf';
     
-    Module.callMain(['--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
+    Module.callMain(['xetex', '--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
 
     ls('.');
     
-    //const xdvData = FS.readFile(outputPath, {encoding: 'binary'});
-    //console.log(xdvData);
-    //previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
+    Module.callMain(['dvipdfmx', 'myjobname.dvi']);
+    
+    ls('.');
+    
+    const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
+    previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
 };
 
 var Module = 
@@ -129,6 +134,6 @@ window.onerror = () => { Module.statusPrefix = '[post-exception] ';};
 
 </script>
 <script async type="text/javascript" src="texlive.js"></script>
-<script async type="text/javascript" src="xelatex.js"></script>
+<script async type="text/javascript" src="busytex.js"></script>
 
 </body></html>
