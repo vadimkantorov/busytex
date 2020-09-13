@@ -5,38 +5,12 @@
 
 <script>
 
-const basename = name => {
-  var lastSlash = name.lastIndexOf('/');
-  var lastDot = name.lastIndexOf('.');
-  if (lastDot === -1) {
-    return name;
-  }
-  if (lastSlash < lastDot) {
-    return name.slice(0, lastDot);
-  }
-  return name;
-};
-
-const splitPath = name => {
-  var lastSlash = name.lastIndexOf('/');
-  if (lastSlash === -1) {
-    return ['', name];
-  }
-  // trim trailing slashes from the head part
-  var i;
-  for (i = lastSlash - 1; i > 0 && name.charAt(i) === '/'; i--) {
-    // no-op
-  }
-  return [name.slice(0, i), name.slice(lastSlash + 1)];
-};
-
 let statusElement = document.getElementById('status');
 let previewElement = document.getElementById('preview');
 
 const texliveRoot = '/texlive';
 const xelatexFmtPath = '/xelatex.fmt';
 const sourcePath = '/home/web_user/source.tex';
-const outputPath = '/home/web_user/source.xdv';
 const texliveCnf = '/texmf.cnf';
 const xelatex = './xetex';
 const dvipdfmx = './dvipdfmx';
@@ -46,10 +20,6 @@ ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 function main(Module)
 {
     FS.chdir('/home/web_user');
-    FS.writeFile(xelatex, '', {encoding: 'utf-8'});
-    FS.writeFile(dvipdfmx, '', {encoding: 'utf-8'});
-
-    FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
 
     //const texMfCnfContent = `
     //  TEXDIR = ${texliveRoot}
@@ -64,6 +34,10 @@ function main(Module)
     //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
     //ENV['KPATHSEA_DEBUG'] = '1';
     
+    FS.writeFile(xelatex, '', {encoding: 'utf-8'});
+    FS.writeFile(dvipdfmx, '', {encoding: 'utf-8'});
+
+    FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
     Module.callMain(['xetex', '--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
     Module.callMain(['dvipdfmx', 'myjobname.dvi']);
     const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
