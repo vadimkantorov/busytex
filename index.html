@@ -1,7 +1,7 @@
-<html><body style="width: 100%; height: 100%">
+<html><body style="width: 100%; height: 100%; overflow: hidden">
 
-<div><iframe style="width: 100%; height:50%" id="preview"></iframe></div>
-<div><textarea style="width: 100%; height: 50%" id="status"></textarea></div>
+<div><iframe style="width: 98%; height:50%" id="preview"></iframe></div>
+<div><textarea style="width: 98%; height: 50%" id="status"></textarea></div>
 
 <script>
 
@@ -64,22 +64,10 @@ function main(Module)
     //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
     //ENV['KPATHSEA_DEBUG'] = '1';
     
-    
-    ls('.');
-    //ENV.TEXMFDIST = '/texlive/texmf-dist:';
-    //ENV['FC_DEBUG'] = '1';
-    //ENV.FONTCONFIG_PATH = '/';
-    //ENVFONTCONFIG_FILE = 'texlive-fontconfig.conf';
-    
     Module.callMain(['xetex', '--interaction=nonstopmode','--recorder', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error', '--jobname=myjobname.dvi', sourcePath]);
-
-    ls('.');
-    
     Module.callMain(['dvipdfmx', 'myjobname.dvi']);
-    
-    ls('.');
-    
     const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
+    
     previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
 };
 
@@ -92,7 +80,6 @@ var Module =
     preRun : [(() =>
     {
         ENV.TEXMFDIST = '/texlive/texmf-dist:';
-        //ENV['FC_DEBUG'] = '1';
         ENV.FONTCONFIG_PATH = '/fontconfig';
         ENV.FONTCONFIG_FILE = 'texlive-fontconfig.conf';
     })],
@@ -104,14 +91,16 @@ var Module =
     
     print(text) 
     {
-        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-        console.log(text);
+        if (arguments.length > 1)
+            text = Array.prototype.slice.call(arguments).join(' ');
+        Module.setStatus('stdout: ' + text);
     },
 
     printErr(text)
     {
-        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
-        console.error(text);
+        if (arguments.length > 1)
+            text = Array.prototype.slice.call(arguments).join(' ');
+        Module.setStatus('stderr: ' + text);
     },
     
     setStatus(text)
