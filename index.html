@@ -1,118 +1,95 @@
 <html><body style="width: 100%; height: 100%; overflow: hidden">
 
 <div><iframe style="width: 98%; height:50%" id="preview"></iframe></div>
-<div><textarea style="width: 98%; height: 50%" id="status"></textarea></div>
 
+<div><textarea style="width: 98%; height: 15%" id="source">
+\documentclass{article}
+\begin{document}
+Hello, world!
+\end{document}
+</textarea></div>
+
+<div><textarea style="width: 98%; height: 25%" id="status"></textarea></div>
+<div><button style="width: 98%; height: 10%; font-size: x-large" onclick="compile()">Compile</button></div> 
+
+
+<script type="text/javascript" src="busytex.js"></script>
+<script async type="text/javascript" src="texlive.js"></script>
 <script>
 
-let statusElement = document.getElementById('status');
-let previewElement = document.getElementById('preview');
-
-const texliveRoot = '/texlive';
-const xelatexFmtPath = '/xelatex.fmt';
-const sourcePath = '/home/web_user/source.tex';
-const texliveCnf = '/texmf.cnf';
-const xelatex = './xetex';
-const dvipdfmx = './dvipdfmx';
-const busytex = '/bin/busytex';
+const home = '/home/web_user';
+const source_path = home + '/source.tex';
+const fmt_xelatex = '/xelatex.fmt';
+const cnf_texlive = '/texmf.cnf';
+const bin_busytex = '/bin/busytex';
+const dir_texmfdist = '/texlive/texmf-dist:';
+const dir_fontconfig = '/fontconfig';
+const conf_fontconfig = 'texlive-fontconfig.conf';
 
 ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
 
 function main(Module)
 {
-    FS.chdir('/home/web_user');
-
-    //const texMfCnfContent = `
-    //  TEXDIR = ${texliveRoot}
-    //  TEXMFDIST = ${texliveRoot}/texmf-dist
-    //  TEXMFLOCAL = ${texliveRoot}/texmf-local
-    //  TEXMFCONFIG = ${texliveRoot}/texmf-config
-    //  TEXMFSYSCONFIG = ${texliveRoot}/texmf-config
-    //  TEXMFVAR = /home/web_user
-    //  TEXMFOUTPUT = /home/web_user
-    //  TEXMFSYSVAR = /home/web_user
-    //  TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!TEXMFCONFIG}`;
-    //FS.writeFile(texliveCnf, texMfCnfContent, {encoding: 'utf-8'});
-    //ENV['KPATHSEA_DEBUG'] = '1';
-
-    FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
-    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + xelatexFmtPath,  sourcePath]);
-    Module.callMain(['dvipdfmx', sourcePath.replace('.tex', '.xdv')]);
-    const pdfData = FS.readFile(sourcePath.replace('.tex', '.pdf'), {encoding: 'binary'});
+    const FS = Module.FS;
     
-    previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
+    const source = document.getElementById('source').value;
+
+    FS.chdir(home);
+    FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
+    
+    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_xelatex,  source_path]);
+    Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
+    
+    const pdf = FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
+    document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
 };
 
-
-
-const Module_busytex = {
-    preRun: () => {
-        const FS = Module_cat.FS;
-        FS.writeFile('test.txt', 'test');
-        FS.mkdir('/global');
-        FS.mount(FS_global, {}, '/global');
-    },
-};
-
-busytex(Module_busytex).then(Module_ => 
+async function compile()
 {
-    Module_.callMain([arg]);
-});
-
-
-
-var Module = 
-{
-    thisProgram : busytex, 
-
-    noInitialRun : true,
-
-    preRun : [(() =>
+    const Module_busytex = 
     {
-        ENV.TEXMFDIST = '/texlive/texmf-dist:';
-        ENV.FONTCONFIG_PATH = '/fontconfig';
-        ENV.FONTCONFIG_FILE = 'texlive-fontconfig.conf';
-    })],
+        noInitialRun : true,
 
-    onRuntimeInitialized()
-    {
-        main(Module);
-    },
-    
-    print(text) 
-    {
-        if (arguments.length > 1)
-            text = Array.prototype.slice.call(arguments).join(' ');
-        Module.setStatus('stdout: ' + text);
-    },
+        thisProgram : bin_busytex,
 
-    printErr(text)
-    {
-        if (arguments.length > 1)
-            text = Array.prototype.slice.call(arguments).join(' ');
-        Module.setStatus('stderr: ' + text);
-    },
-    
-    setStatus(text)
-    {
-        statusElement.value += (this.statusPrefix || '') + text + '\n';
-        statusElement.scrollTop = statusElement.scrollHeight;
-    },
-    
-    monitorRunDependencies(left)
-    {
-        this.totalDependencies = Math.max(this.totalDependencies, left);
-        Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-    },
-    
-    totalDependencies: 0,
-};
-Module.setStatus('Downloading Emscripten...');
-window.onerror = () => { Module.statusPrefix = '[post-exception] ';};
+        preRun : [() =>
+        {
+            const ENV = Module_busytex.ENV;
+            ENV.TEXMFDIST = dir_texmfdist;
+            ENV.FONTCONFIG_PATH = dir_fontconfig;
+            ENV.FONTCONFIG_FILE = conf_fontconfig;
+        }],
+        
+        print(text) 
+        {
+            Module_busytex.setStatus('stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+
+        printErr(text)
+        {
+            Module_busytex.setStatus('stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+        
+        setStatus(text)
+        {
+            let statusElement = document.getElementById('status');
+            statusElement.value += (this.statusPrefix || '') + text + '\n';
+            statusElement.scrollTop = statusElement.scrollHeight;
+        },
+        
+        monitorRunDependencies(left)
+        {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+            Module_busytex.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        },
+        
+        totalDependencies: 0,
+    };
+
+    main(await busytex(Module_busytex));
+}
+
 </script>
 
-</script>
-<script async type="text/javascript" src="texlive.js"></script>
-<script async type="text/javascript" src="busytex.js"></script>
 
 </body></html>
