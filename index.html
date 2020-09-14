@@ -36,13 +36,30 @@ function main(Module)
     //ENV['KPATHSEA_DEBUG'] = '1';
 
     FS.writeFile(sourcePath, '\\documentclass{article}\\begin{document}Hello, world!\\end{document}', {encoding: 'utf-8'}); 
-    Module.callMain(['xetex', '--interaction=nonstopmode', '--no-pdf', '--fmt=' + xelatexFmtPath, '--output-directory=/home/web_user', '--halt-on-error',  sourcePath]);
-    ls('.');
-    //Module.callMain(['dvipdfmx', 'myjobname.dvi']);
-    //const pdfData = FS.readFile('myjobname.pdf', {encoding: 'binary'});
+    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + xelatexFmtPath,  sourcePath]);
+    Module.callMain(['dvipdfmx', sourcePath.replace('.tex', '.xdv')]);
+    const pdfData = FS.readFile(sourcePath.replace('.tex', '.pdf'), {encoding: 'binary'});
     
-    //previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
+    previewElement.src = URL.createObjectURL(new Blob([pdfData], {type: 'application/pdf'}));
 };
+
+
+
+const Module_busytex = {
+    preRun: () => {
+        const FS = Module_cat.FS;
+        FS.writeFile('test.txt', 'test');
+        FS.mkdir('/global');
+        FS.mount(FS_global, {}, '/global');
+    },
+};
+
+busytex(Module_busytex).then(Module_ => 
+{
+    Module_.callMain([arg]);
+});
+
+
 
 var Module = 
 {
