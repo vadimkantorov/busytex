@@ -6,7 +6,7 @@
 bash clean.sh
 
 # build native tools
-bash build_native.sh
+make native
 
 # build wasm tools
 bash build_wasm.sh
