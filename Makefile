@@ -1,6 +1,8 @@
-ROOT := $(CURDIR)
+URL_texlive = https://github.com/TeX-Live/texlive-source/archive/9ed922e7d25e41b066f9e6c973581a4e61ac0328.tar.gz
+URL_expat = https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat-2.2.9.tar.gz
+URL_fontconfig = https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.1.tar.gz
 
-EXPAT_SOURCE_URL = https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat-2.2.9.tar.gz
+ROOT := $(CURDIR)
 
 PREFIX_wasm = prefix/wasm
 PREFIX_native = prefix/native
@@ -13,10 +15,9 @@ CMAKE_wasm = emcmake cmake
 
 CFLAGS_wasm_expat = -s USE_PTHREADS=0 -s NO_FILESYSTEM=1
 
-source/expat:
-	wget --no-clobber $(EXPAT_SOURCE_URL) -O source/expat.tar.gz || true
-	mkdir -p source/expat || true
-	tar -xf source/expat.tar.gz --strip-components=1 --directory=source/expat
+source/texlive source/expat source/fontconfig:
+	wget --no-clobber $(URL_$(notdir $@)) -O "$@.tar.gz" || true
+	mkdir -p "$@" && tar -xf "$@.tar.gz" --strip-components=1 --directory="$@"
 
 build/%/expat/libexpat.a: source/expat 
 	mkdir -p $(dir $@) && \
