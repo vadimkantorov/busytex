@@ -191,10 +191,12 @@ DVIPDF_OBJECTS=" $O/agl.o  $O/cff.o $O/cff_dict.o $O/cid.o $O/cidtype0.o $O/cidt
 DVIPDF_DEPS="-I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm" 
 
 # file system
-echo > $ROOT/dummy
-python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4  --use-preload-cache --preload "$ROOT/dummy@/bin/busytex" --preload "$ROOT/fontconfig@/fontconfig" --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js
+#echo > $ROOT/dummy
+#python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4  --use-preload-cache --preload "$ROOT/dummy@/bin/busytex" --preload "$ROOT/fontconfig@/fontconfig" --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js
 
-emcc -g -O2 -s MODULARIZE=1 -s EXPORT_NAME=busytex --pre-js $ROOT/texlive.js -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c
+#emcc -g -O2 -s MODULARIZE=1 -s EXPORT_NAME=busytex --pre-js $ROOT/texlive.js -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c
+
+emcc -g -O2 -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -o $ROOT/nodebusytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c --embed-file "$ROOT/dummy@/bin/busytex" --embed-file "$ROOT/fontconfig@/fontconfig" --embed-file "$ROOT/texmf.cnf@/texmf.cnf" --embed-file "$ROOT/texlive@/texlive" --embed-file "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt"
 
 #TEXDIR = ${texliveRoot}
 #TEXMFDIST = ${texliveRoot}/texmf-dist

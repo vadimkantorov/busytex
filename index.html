@@ -14,7 +14,7 @@ Hello, world!
 
 
 <script type="text/javascript" src="busytex.js"></script>
-<script async type="text/javascript" src="texlive.js"></script>
+<!--<script async type="text/javascript" src="texlive.js"></script>-->
 <script>
 
 const home = '/home/web_user';
@@ -37,7 +37,7 @@ function main(Module)
     FS.chdir(home);
     FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
     
-    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_xelatex,  source_path]);
+    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_xelatex, source_path]);
     Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
     
     const pdf = FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
