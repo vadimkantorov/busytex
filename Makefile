@@ -11,7 +11,8 @@ source/expat:
 	tar -xf source/expat.tar.gz --strip-components=1 --directory source/expat
 
 build/%/expat/libexpat.a: source/expat 
-	mkdir -p $(dir $@) && cd $(dir $@) 
+	mkdir -p $(dir $@) && \
+	cd $(dir $@) && \
 	$(CMAKE_$*) \
 	   -DCMAKE_INSTALL_PREFIX="$(PREFIX_$*)" \
 	   -DEXPAT_BUILD_DOCS=off \
@@ -20,6 +21,5 @@ build/%/expat/libexpat.a: source/expat
 	   -DEXPAT_BUILD_FUZZERS=off \
 	   -DEXPAT_BUILD_TESTS=off \
 	   -DEXPAT_BUILD_TOOLS=off \
-	   $(ROOT)/source/expat 
-	
+	   $(ROOT)/source/expat  && \
 	$(MAKE_$*) $(MAKEFLAGS)
