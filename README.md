@@ -10,8 +10,11 @@ source ./emsdk/emsdk_env.sh
 git clone https://github.com/vadimkantorov/busytex
 cd busytex
 
+# set make parallelism
+export MAKEFLAGS=-j8
+
 # build native tools
-make -j8 native
+make native
 
 # build TeX Directory Structure (TDS) and latex format file (latex.fmt)
 make build/install-tl/install-tl
@@ -21,7 +24,8 @@ make source/base
 make build/format/latex.fmt
 
 # build wasm tools
-bash build_wasm.sh
+make wasm
+make build/fontconfig/texlive.conf
 
 # clean
 make clean

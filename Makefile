@@ -156,6 +156,15 @@ build/%/fontconfig/libfontconfig.a: source/fontconfig build/%/expat/libexpat.a b
 	   CFLAGS="$(CFLAGS_$*_$(notdir $<))" FREETYPE_CFLAGS="$(CFLAGS_FREETYPE_$*_$(notdir $<))" FREETYPE_LIBS="$(LIBS_FREETYPE_$*_$(notdir $<))" && \
 	$(MAKE_$*) make $(MAKEFLAGS)
 
+build/fontconfig/texlive.conf:
+	mkdir -p $(dir $@)
+	echo '<?xml version="1.0"?>' > $@
+	echo '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' >> $@
+	echo '<fontconfig>' >> $@
+	echo '<dir>/texlive/texmf-dist/fonts/opentype</dir>' >> $@
+	echo '<dir>/texlive/texmf-dist/fonts/type1</dir>' >> $@
+	echo '</fontconfig>' >> $@
+
 build/%/texlive/texk/web2c/xetex: \
 	build/%/texlive/libs/teckit/libTECkit.a \
 	build/%/texlive/libs/harfbuzz/libharfbuzz.a \
