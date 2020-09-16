@@ -16,7 +16,7 @@ CMAKE_wasm = emcmake
 CONFIGURE_wasm = emconfigure
 
 TOTAL_MEMORY = 536870912
-SKIP = 'all install:'
+SKIP = all install:
 
 CACHE_native_texlive = $(ROOT)/build/native-texlive.cache
 CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
@@ -37,10 +37,13 @@ LIBS_FREETYPE_native_fontconfig = -L$(ROOT)/build/native/texlive/libs/freetype2/
 
 CCSKIP_wasm_icu = python3 $(ROOT)/ccskip.py "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg" "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata" --
 CCSKIP_wasm_freetype2 = python3 $(ROOT)/ccskip.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
+CCSKIP_wasm_xetex = python3 $(ROOT)/ccskip.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c, ctangle otangle tangle tangleboot ctangleboot tieweb2c) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c, fixwrites makecpool splitup web2c) --
+
 OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
 OPTS_wasm_bibtex = -e CFLAGS="$(CFLAGS_wasm_bibtex)" -e CXXFLAGS="$(CFLAGS_wasm_bibtex)"
 OPTS_wasm_icu_configure = CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
 OPTS_wasm_icu_make = -e PKGDATA_OPTS="--without-assembly -O $(ROOT)/build/wasm/texlive/libs/icu/icu-build/data/icupkg.inc" -e CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" -e CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
+OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc" CXX="$(CCSKIP_wasm_xetex) em++"
 
 source/texlive source/expat source/fontconfig:
 	wget --no-clobber $(URL_$(notdir $@)) -O "$@.tar.gz" || true
@@ -52,8 +55,8 @@ source/fontconfig.patched: source/fontconfig
 	touch $@
 
 source/texlive.patched: source/texlive
-	for d in texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools; do \
-		echo "$(SKIP)" > $(ROOT)/$</Makefile.in ; \
+	for texprog in texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools; do \
+		echo "$(SKIP)" > $(ROOT)/$</$$texprog/Makefile.in ; \
 	done
 	touch $@
 
@@ -104,16 +107,16 @@ build/%/texlive/texk/bibtex-x/bibtexu : build/%/texlive/Makefile
 #$EMMAKE make clean
 #$EMMAKE make $MAKEFLAGS CC="emcc $CFLAGS_DVIPDFMX" CXX="em++ $CFLAGS_DVIPDFMX"
 
-build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a &: build/wasm/texlive/Makefile build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
+build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive/Makefile build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	echo "$(SKIP)" > $(ROOT)/build/wasm/texlive/libs/icu/icu-build/test/Makefile
 	$(CONFIGURE_wasm) $(ROOT)/$</configure $(OPTS_wasm_icu_configure)
 	$(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_icu_make)
 
-build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/wasm/texlive/Makefile build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata &: build/%/texlive/Makefile
-	$(MAKE_wasm) make $(MAKEFLAGS)
+build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/%/texlive/Makefile
+	$(MAKE_native) make $(MAKEFLAGS)
 
 build/wasm/texlive/libs/libs/freetype2/libfreetype.a: build/wasm/texlive/Makefile
-	cd $(dir $@) && $(MAKE_$*) make $(MAKEFLAGS) $(OPTS_$*_freetype2)
+	cd $(dir $@) && $(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_$*_freetype2)
 
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive/Makefile
 	cd $(ROOT)/$(dir $@) && $(MAKE_$*) make $(MAKEFLAGS) 
@@ -145,7 +148,23 @@ build/%/fontconfig/libfontconfig.a: source/fontconfig build/%/expat/libexpat.a b
 	   CFLAGS="$(CFLAGS_$*_$(notdir $<))" FREETYPE_CFLAGS="$(CFLAGS_FREETYPE_$*_$(notdir $<))" FREETYPE_LIBS="$(LIBS_FREETYPE_$*_$(notdir $<))" && \
 	$(MAKE_$*) make $(MAKEFLAGS)
 
-native: build/native/texlive/Makefile \
+build/%/texlive/texk/web2c/xetex: \
+	build/%/texlive/libs/teckit/libTECkit.a \
+	build/%/texlive/libs/harfbuzz/libharfbuzz.a \
+	build/%/texlive/libs/graphite2/libgraphite2.a \
+	build/%/texlive/libs/libpng/libpng.a \
+	build/%/texlive/libs/zlib/libz.a \
+	build/%/texlive/libs/pplib/libpplib.a \
+	build/%/texlive/libs/freetype2/libfreetype.a \
+	build/%/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	build/%/expat/libexpat.a \
+	build/%/fontconfig/libfontconfig.a 
+	cd $(dir $@) && \
+	$(MAKE_$*) make $(MAKEFLAGS) xetex $(OPTS_$*_$(notdir $<))
+
+
+native: \
+	build/native/texlive/Makefile \
 	build/native/texlive/libs/teckit/libTECkit.a \
 	build/native/texlive/libs/harfbuzz/libharfbuzz.a \
 	build/native/texlive/libs/graphite2/libgraphite2.a \
@@ -153,12 +172,13 @@ native: build/native/texlive/Makefile \
 	build/native/texlive/libs/zlib/libz.a \
 	build/native/texlive/libs/pplib/libpplib.a \
 	build/native/texlive/libs/freetype2/libfreetype.a \
-	build/native/expat/libexpat.a \
-	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/native/texlive/libs/icu/icu-build/lib/libicudata.a \
-	build/native/texlive/libs/icu/icu-build/bin/icupkg \
-	build/native/texlive/libs/icu/icu-build/bin/pkgdata \
-	build/native/fontconfig/libfontconfig.a 
+	build/native/expat/libexpat.a #\
+	#build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	#build/native/texlive/libs/icu/icu-build/lib/libicudata.a \
+	#build/native/texlive/libs/icu/icu-build/bin/icupkg \
+	#build/native/texlive/libs/icu/icu-build/bin/pkgdata \
+	#build/native/fontconfig/libfontconfig.a #\
+	#build/native/texlive/texk/web2c/xetex
 	echo Native tools built
 
 clean_native:
