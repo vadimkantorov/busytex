@@ -1,22 +1,29 @@
-# [WIP] [DOESNTWORKYET] TexLive 2020 compiled with Emscripten into WebAssembly and bundled into a single executable
+# [WIP] TexLive 2020 compiled with Emscripten into WebAssembly and bundled into a single executable
 
 ```shell
+# install and activate emscripten
+emsdk install 2.0.0 # 5974288502aab433d45f53511e961aaca4079d86
+emsdk activate 2.0.0
+source ./emsdk/emsdk_env.sh
+
+# clone busytex
+git clone https://github.com/vadimkantorov/busytex
+cd busytex
 
 # build native tools
 make -j8 native
+
+# build TeX Directory Structure (TDS) and latex format file (latex.fmt)
+make build/install-tl/install-tl
+make build/texlive/profile.input
+make build/texlive/texmf-dist
+make build/latex.fmt
 
 # build wasm tools
 bash build_wasm.sh
 
 # clean
 make clean
-
-```
-
-### Versions
-```shell
-emsdk install 2.0.0 # 5974288502aab433d45f53511e961aaca4079d86
-emsdk activate 2.0.0
 ```
 
 ### Portable version

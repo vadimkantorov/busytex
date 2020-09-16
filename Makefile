@@ -6,6 +6,11 @@ URL_texlive = https://github.com/TeX-Live/texlive-source/archive/9ed922e7d25e41b
 URL_expat = https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat-2.2.9.tar.gz
 URL_fontconfig = https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz
 
+URL_TEXLIVE_TEXMF = ftp://tug.org/texlive/historic/2020/texlive-20200406-texmf.tar.xz 
+URL_TEXLIVE_TLPDB = ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-full.tar.gz
+URL_TEXLIVE_BASE = http://mirrors.ctan.org/macros/latex/base.zip
+URL_TEXLIVE_INSTALLER = http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+
 ROOT := $(CURDIR)
 
 PREFIX_wasm = $(ROOT)/prefix/wasm
@@ -50,8 +55,8 @@ source/texlive source/expat source/fontconfig:
 	mkdir -p "$@" && tar -xf "$@.tar.gz" --strip-components=1 --directory="$@"
 
 source/fontconfig.patched: source/fontconfig
-	patch -d $(ROOT)/$< -Np1 -i $(ROOT)/0002-fix-fcstats-emscripten.patch
-	echo "$(SKIP)" > $(ROOT)/$</test/Makefile.in 
+	patch -d $< -Np1 -i 0002-fix-fcstats-emscripten.patch
+	echo "$(SKIP)" > $</test/Makefile.in 
 	touch $@
 
 source/texlive.patched: source/texlive
@@ -60,7 +65,7 @@ source/texlive.patched: source/texlive
 	touch $@
 
 build/%/texlive/configured: source/texlive source/texlive.patched
-	echo > $(CACHE_$*_$(notdir $<)) 
+	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_$(notdir $<)) 
 	mkdir -p $(dir $@) && cd $(dir $@) && 		\
 	$(CONFIGURE_$*) $(ROOT)/$</configure		\
 	  --cache-file=$(CACHE_$*_$(notdir $<))		\
@@ -108,13 +113,15 @@ build/%/texlive/texk/bibtex-x/bibtexu : build/%/texlive/configured
 #$EMMAKE make $MAKEFLAGS CC="emcc $CFLAGS_DVIPDFMX" CXX="em++ $CFLAGS_DVIPDFMX"
 
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive/configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
-	echo "$(SKIP)" > $(ROOT)/build/wasm/texlive/libs/icu/icu-build/test/Makefile
 	cd build/wasm/texlive/libs/icu && \
-	$(CONFIGURE_wasm) $(ROOT)/$</configure $(OPTS_wasm_icu_configure) 
-	$(MAKE_wasm)   make -C build/wasm/texlive/libs/icu   $(MAKEFLAGS)  $(OPTS_wasm_icu_make)
+	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
+	$(MAKE_wasm) make -C build/wasm/texlive/libs/icu $(MAKEFLAGS) $(OPTS_wasm_icu_make) && \
+	echo "$(SKIP)" > build/wasm/texlive/libs/icu/icu-build/test/Makefile && \
+	make -C build/native/texlive/libs/icu/icu-build $(MAKEFLAGS)
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive/configured
-	$(MAKE_native) make -C build/native/texlive/libs/icu $(MAKEFLAGS)
+	make -C build/native/texlive/libs/icu $(MAKEFLAGS)
+	make -C build/native/texlive/libs/icu/icu-build $(MAKEFLAGS)
 
 build/wasm/texlive/libs/libs/freetype2/libfreetype.a: build/wasm/texlive/configured build/native/texlive/libs/freetype2/libfreetype.a
 	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) $(OPTS_wasm_freetype2)
@@ -160,12 +167,43 @@ build/%/texlive/texk/web2c/xetex: \
 	build/%/texlive/libs/icu/icu-build/lib/libicuuc.a \
 	build/%/expat/libexpat.a \
 	build/%/fontconfig/libfontconfig.a 
-	cd $(dir $@) && \
-	$(MAKE_$*) make $(MAKEFLAGS) xetex $(OPTS_$*_$(notdir $<))
+	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_$*_$(notdir $<))
 
+build/install-tl/install-tl:
+	wget --no-clobber $(URL_TEXLIVE_INSTALLER) -P source || true
+	mkdir -p "$@" && tar -xf "source/$(notdir $(URL_TEXLIVE_INSTALLER))" --strip-components=1 --directory="build/install-tl"
+
+build/texlive/profile.input:
+	mkdir -p $(dir $@)
+	echo selected_scheme scheme-basic > $@
+	echo TEXDIR $(ROOT)/$(dir $@) >> $@
+	echo TEXMFLOCAL $(ROOT)/$(dir $@)/texmf-local >> $@
+	echo TEXMFSYSVAR $(ROOT)/$(dir $@)/texmf-var >> $@
+	echo TEXMFSYSCONFIG $(ROOT)/$(dir $@)/texmf-config >> $@
+	echo TEXMFVAR $(ROOT)/$(dir $@)/home/texmf-var >> $@
+
+build/texlive/texmf-dist: build/install-tl/install-tl build/texlive/profile.input
+	cd build/texlive && \
+	$(ROOT)/build/install-tl/install-tl -profile profile.input && \
+	rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
+	#TEXLIVE_INSTALL_PREFIX=/opt/texlive ./install-tl
+
+source/base:
+	wget --no-clobber $(URL_TEXLIVE_BASE) -O $@.zip || true
+	unzip $@.zip -d source
+
+build/format/xetex.fmt:  build/texlive/texmf-dist source/base 
+	mkdir -p $(ROOT)/build/format
+	cd source/base && \
+	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/build/native/texlive/texk/web2c/xetex -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex unpack.ins && \
+	touch hyphen.cfg && \
+	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/build/native/texlive/texk/web2c/xetex -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex latex.ltx
 
 native: \
-	build/native/texlive/configured \
+	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	build/native/texlive/libs/icu/icu-build/lib/libicudata.a \
+	build/native/texlive/libs/icu/icu-build/bin/icupkg \
+	build/native/texlive/libs/icu/icu-build/bin/pkgdata \
 	build/native/texlive/libs/teckit/libTECkit.a \
 	build/native/texlive/libs/harfbuzz/libharfbuzz.a \
 	build/native/texlive/libs/graphite2/libgraphite2.a \
@@ -173,18 +211,35 @@ native: \
 	build/native/texlive/libs/zlib/libz.a \
 	build/native/texlive/libs/pplib/libpplib.a \
 	build/native/texlive/libs/freetype2/libfreetype.a \
-	build/native/expat/libexpat.a #\
-	#build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	#build/native/texlive/libs/icu/icu-build/bin/icupkg \
-	#build/native/texlive/libs/icu/icu-build/bin/pkgdata \
-	#build/native/fontconfig/libfontconfig.a #\
-	#build/native/texlive/texk/web2c/xetex
-	echo Native tools built
+	build/native/expat/libexpat.a \
+	build/native/fontconfig/libfontconfig.a \
+	build/native/texlive/texk/web2c/xetex
+	echo native tools built
+
+wasm: \
+	build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a \
+	build/wasm/texlive/libs/icu/icu-build/bin/icupkg \
+	build/wasm/texlive/libs/icu/icu-build/bin/pkgdata \
+	build/wasm/texlive/libs/teckit/libTECkit.a \
+	build/wasm/texlive/libs/harfbuzz/libharfbuzz.a \
+	build/wasm/texlive/libs/graphite2/libgraphite2.a \
+	build/wasm/texlive/libs/libpng/libpng.a \
+	build/wasm/texlive/libs/zlib/libz.a \
+	build/wasm/texlive/libs/pplib/libpplib.a \
+	build/wasm/texlive/libs/freetype2/libfreetype.a \
+	build/wasm/expat/libexpat.a \
+	build/wasm/fontconfig/libfontconfig.a 
+	echo wasm tools built
 
 clean_native:
-	rm -rf build/native/texlive build/native/expat build/native/fontconfig
+	rm -rf build/native
 
-clean: clean_native
+clean_format:
+	rm -rf build/format
+
+clean:
+	rm -rfbuild
 
 .PHONY:
-	native clean clean_native
+	native clean clean_native clean_format
