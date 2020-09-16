@@ -115,9 +115,9 @@ build/%/texlive/texk/bibtex-x/bibtexu : build/%/texlive/configured
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive/configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	cd build/wasm/texlive/libs/icu && \
 	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
-	$(MAKE_wasm) make -C build/wasm/texlive/libs/icu $(MAKEFLAGS) $(OPTS_wasm_icu_make) && \
+	$(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_icu_make) && \
 	echo "$(SKIP)" > build/wasm/texlive/libs/icu/icu-build/test/Makefile && \
-	make -C build/native/texlive/libs/icu/icu-build $(MAKEFLAGS)
+	make -C icu-build $(MAKEFLAGS)
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive/configured
 	make -C build/native/texlive/libs/icu $(MAKEFLAGS)
@@ -192,12 +192,12 @@ source/base:
 	wget --no-clobber $(URL_TEXLIVE_BASE) -O $@.zip || true
 	unzip $@.zip -d source
 
-build/format/xetex.fmt:  build/texlive/texmf-dist source/base 
+build/format/xetex.fmt: build/native/texlive/texk/web2c/xetex build/texlive/texmf-dist source/base 
 	mkdir -p $(ROOT)/build/format
 	cd source/base && \
-	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/build/native/texlive/texk/web2c/xetex -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex unpack.ins && \
+	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/$< -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex unpack.ins && \
 	touch hyphen.cfg && \
-	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/build/native/texlive/texk/web2c/xetex -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex latex.ltx
+	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/$< -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex latex.ltx
 
 native: \
 	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \

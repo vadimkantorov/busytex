@@ -17,7 +17,8 @@ make -j8 native
 make build/install-tl/install-tl
 make build/texlive/profile.input
 make build/texlive/texmf-dist
-make build/latex.fmt
+make source/base
+make build/format/latex.fmt
 
 # build wasm tools
 bash build_wasm.sh
