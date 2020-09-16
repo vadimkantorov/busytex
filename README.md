@@ -2,14 +2,15 @@
 
 ```shell
 
-# clean
-bash clean.sh
-
 # build native tools
-make native
+make -j8 native
 
 # build wasm tools
 bash build_wasm.sh
+
+# clean
+make clean
+
 ```
 
 ### Versions
