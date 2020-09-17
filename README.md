@@ -50,6 +50,8 @@ $BUSYTEX dvipdfmx example.xdv
 2. [xetex.js](https://github.com/lyze/xetex-js)
 3. [dvi2html](https://github.com/kisonecat/dvi2html), [web2js](https://github.com/kisonecat/web2js)
 4. [SwiftLaTeX](https://github.com/SwiftLaTeX/SwiftLaTeX)
+5. [JavascriptSubtitlesOctopus](https://github.com/Dador/JavascriptSubtitlesOctopus)
+6. fontconfig patch [1](https://github.com/Dador/JavascriptSubtitlesOctopus/blob/master/build/patches/fontconfig/0002-fix-fcstats-emscripten.patch) and [2](https://github.com/lyze/xetex-js/blob/master/fontconfig-fcstat.c.patch)
 
 ### Links
 https://github.com/dmonad/pdftex.js
