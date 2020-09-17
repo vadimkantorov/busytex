@@ -217,7 +217,7 @@ build/%/expat/libexpat.a: source/expat.downloaded
 build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
 	$(CONFIGURE_$*) $(ROOT)/$(basename $<)/configure \
-	   --cache-file=$(CACHE_$*_$(notdir $<))		 \
+	   --cache-file=$(CACHE_$*_fontconfig)		 \
 	   --prefix=$(PREFIX_$*) \
 	   --enable-static \
 	   --disable-shared \
