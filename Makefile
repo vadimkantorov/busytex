@@ -13,8 +13,8 @@ URL_TEXLIVE_INSTALLER = http://mirror.ctan.org/systems/texlive/tlnet/install-tl-
 
 ROOT := $(CURDIR)
 
-PREFIX_wasm = $(ROOT)/prefix/wasm
-PREFIX_native = $(ROOT)/prefix/native
+PREFIX_wasm = $(ROOT)/build/wasm/prefix
+PREFIX_native = $(ROOT)/build/native/prefix
 
 MAKE_wasm = emmake
 CMAKE_wasm = emcmake
@@ -56,9 +56,21 @@ OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc" CXX="$(CCSKIP_wasm_xetex) em++"
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX)" CXX="em++ $(CFLAGS_XDVIPDFMX)"
 OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIPDFMX)"
 
+OBJ_XETEX = synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o
+OBJ_XETEX_DEPS = $(addprefix $(ROOT)/build/wasm/texlive/libs/, harfbuzz/libharfbuzz.a graphite2/libgraphite2.a teckit/libTECkit.a libpng/libpng.a freetype2/libfreetype.a pplib/libpplib.a zlib/libz.a icu/icu-build/lib/libicuuc.a icu/icu-build/lib/libicudata.a) libmd5.a lib/lib.a $(ROOT)/build/wasm/texlive/texk/kpathsea/.libs/libkpathsea.a $(ROOT)/build/wasm/fontconfig/src/.libs/libfontconfig.a $(ROOT)/build/wasm/expat/libexpat.a  
+OBJ_XETEX_BINXETEX = xetexdir/xetex-xetexextra.o libxetex.a
+
+OBJ_XETEX_BINBUSY = xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o xetexdir/libxetex_a-XeTeXFontMgr_FC.o xetexdir/xetex-xetexextra.o
+
+OBJ_XETEX_DEPS_BINBUSY = $(addprefix $(ROOT)/build/wasm/texlive/, texk/web2c/xetexdir/image/libxetex_a-pngimage.o texk/web2c/xetexdir/image/libxetex_a-bmpimage.o texk/web2c/xetexdir/image/libxetex_a-jpegimage.o)
+
+OBJ_DVIPDF = $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, dvipdfmx_.o agl.o cff.o cff_dict.o cid.o cidtype0.o cidtype2.o cmap.o cmap_read.o cmap_write.o cs_type2.o dpxconf.o dpxcrypt.o dpxfile.o dpxutil.o dvi.o  epdf.o error.o fontmap.o jp2image.o  jpegimage.o bmpimage.o pngimage.o   mfileio.o numbers.o  mem.o mpost.o mt19937ar.o otl_opt.o pdfcolor.o pdfdev.o pdfdoc.o pdfdraw.o pdfencrypt.o pdfencoding.o pdffont.o pdfnames.o pdfobj.o pdfparse.o pdfresource.o pdfximage.o pkfont.o  pst.o pst_obj.o sfnt.o spc_color.o spc_dvipdfmx.o spc_dvips.o spc_html.o spc_misc.o spc_pdfm.o spc_tpic.o spc_util.o spc_xtx.o specials.o subfont.o t1_char.o t1_load.o tfm.o truetype.o tt_aux.o tt_cmap.o tt_glyf.o tt_gsub.o tt_post.o tt_table.o type0.o type1.o type1c.o unicode.o vf.o xbb.o)
+OBJ_DVIPDF_DEPS = $(addprefix $(ROOT)/build/wasm/texlive/libs/, libpng/libpng.a zlib/libz.a libpaper/libpaper.a) $(ROOT)/build/wasm/texlive/texk/kpathsea/.libs/libkpathsea.a -lm -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/build/wasm/fontconfig  
+
 source/texlive source/expat source/fontconfig:
+	mkdir -p $@
 	wget --no-clobber $(URL_$(notdir $@)) -O "$@.tar.gz" || true
-	mkdir -p "$@" && tar -xf "$@.tar.gz" --strip-components=1 --directory="$@"
+	tar -xf "$@.tar.gz" --strip-components=1 --directory="$@"
 
 source/fontconfig.patched: source/fontconfig
 	patch -d $< -Np1 -i 0002-fix-fcstats-emscripten.patch
@@ -107,6 +119,64 @@ build/%/texlive/configured: source/texlive source/texlive.patched
 	  CPPFLAGS="$(CFLAGS_$*_$(notdir $<))" &&   \
 	$(MAKE_$*) make $(MAKEFLAGS)  				
 	touch $@
+
+build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o:
+	cd build/wasm/texlive/texk/dvipdfm-x && emcc \
+		-Dmain='__attribute__((visibility("default"))) busymain_dvipdfmx' \
+		-DHAVE_CONFIG_H \
+		-DBUILD_DATA_WITHOUT_ASSEMBLY=1 \
+		-Wimplicit \
+		-Wreturn-type \
+		-I. \
+		-I../../../texk/dvipdfm-x  \
+		-I$(ROOT)/build/wasm/texlive/texk \
+		-I$(ROOT)/source/texlive/texk \
+		-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
+		-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
+		-I$(ROOT)/build/wasm/texlive/libs/libpaper/include \
+		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+		-I$(ROOT)/build/wasm/prefix/include \
+		-I$(ROOT)/source/fontconfig \
+		-MT dvipdfmx_.o -MD -MP -MF $$depbase.Tpo -c -o dvipdfmx_.o \
+		../../../texk/dvipdfm-x/dvipdfmx.c
+
+build/wasm/texlive/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o:
+	cd build/wasm/texlive/texk/web2c && emcc \
+		-Dmain='__attribute__((visibility("default"))) busymain_xetex' \
+		-DHAVE_CONFIG_H \
+		-DU_STATIC_IMPLEMENTATION \
+		-DGRAPHITE2_STATIC \
+		-D__SyncTeX__ \
+		-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
+		-DBUILD_DATA_WITHOUT_ASSEMBLY=1 \
+		-I. \
+		-I../../../texk/web2c \
+		-I./w2c  \
+		-I../../../texk/web2c/xetexdir \
+		-I$(ROOT)/source/texlive/texk \
+		-I$(ROOT)/build/wasm/texlive/texk \
+		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+		-I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2 \
+		-I$(ROOT)/build/wasm/texlive/libs/teckit/include \
+		-I$(ROOT)/build/wasm/texlive/libs/harfbuzz/include \
+		-I$(ROOT)/build/wasm/texlive/libs/graphite2/include \
+		-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
+		-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
+		-I$(ROOT)/build/wasm/texlive/libs/pplib/include \
+		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+		-I$(ROOT)/build/wasm/prefix \
+		-I$(ROOT)/source/fontconfig \
+		-I../../../texk/web2c/libmd5  \
+		-I/usr/include/freetype2 \
+		-I/usr/include/libpng16 \
+		-I/usr/include/freetype2 \
+		-I/usr/include/libpng16 \
+		-I../../../texk/web2c/synctexdir \
+		-Wimplicit \
+		-Wreturn-type \
+		-MT xetexdir/xetex-xetexextra_.o -MD -MP -MF xetexdir/.deps/xetex-xetexextra_.Tpo -c -o xetexdir/xetex-xetexextra_.o \
+		$(ROOT)/build/wasm/texlive/texk/web2c/xetexdir/xetexextra.c
 
 build/%/texlive/texk/dvipdfm-x/xdvipdfmx build/%/texlive/texk/bibtex-x/bibtexu: build/%/texlive/configured
 	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) clean
@@ -204,12 +274,15 @@ build/wasm/texlive/texk/web2c/xetex: #\
 	#	-DHAVE_CONFIG_H \
 	#	-D__SyncTeX__ \
 	#	-DGRAPHITE2_STATIC \
+	#	-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
 	#	-I. \
 	#	-I../../../texk/web2c \
 	#	-I./w2c  \
 	#	-I$(ROOT)/build/wasm/texlive/texk \
 	#	-I$(ROOT)/build/wasm/texlive/g/texk \
 	#	-I../../../texk/web2c/xetexdir  \
+	#	-I../../../texk/web2c/libmd5   \
+	#	-I../../../texk/web2c/synctexdir \
 	#	-I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2 \
 	#	-I$(ROOT)/build/wasm/texlive/libs/teckit/include \
 	#	-I$(ROOT)/build/wasm/texlive/libs/harfbuzz/include \
@@ -217,11 +290,8 @@ build/wasm/texlive/texk/web2c/xetex: #\
 	#	-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
 	#	-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
 	#	-I$(ROOT)/build/wasm/texlive/libs/pplib/include \
-	#	-I../../../texk/web2c/libmd5   \
-	#	-I../../../texk/web2c/synctexdir \
-	#	-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
-	#	-I$(ROOT)/build/wasm/prefix/include \
 	#	-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+	#	-I$(ROOT)/build/wasm/prefix/include \
 	#	-I$(ROOT)/source/fontconfig \
 	#	-Wimplicit \
 	#	-Wreturn-type \
@@ -264,13 +334,11 @@ build/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/fontco
 build/texmf.cnf: build/texlive/texmf-dist
 	cp $</web2c/texmf.cnf $@
 
-#build/busytex.js:
-	#XETEX_OBJECTS="xetex-xetex-pool.o  xetexdir/xetex-xetexextra.o   synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o  xetexdir/libxetex_a-XeTeXFontMgr_FC.o"
-	#XETEX_DEPS="$TEXLIVE_BUILD_DIR/libs/harfbuzz/libharfbuzz.a $TEXLIVE_BUILD_DIR/libs/graphite2/libgraphite2.a $TEXLIVE_BUILD_DIR/libs/teckit/libTECkit.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/freetype2/libfreetype.a  $TEXLIVE_BUILD_DIR/libs/pplib/libpplib.a  $TEXLIVE_BUILD_DIR/texk/web2c/xetexdir/image/libxetex_a-pngimage.o $TEXLIVE_BUILD_DIR/texk/web2c/xetexdir/image/libxetex_a-bmpimage.o $TEXLIVE_BUILD_DIR/texk/web2c/xetexdir/image/libxetex_a-jpegimage.o  $TEXLIVE_BUILD_DIR/libs/zlib/libz.a libmd5.a lib/lib.a $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $FONTCONFIG_BUILD_DIR/src/.libs/libfontconfig.a $EXPAT_BUILD_DIR/libexpat.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicuuc.a $TEXLIVE_BUILD_DIR/libs/icu/icu-build/lib/libicudata.a" 
-	#O=$TEXLIVE_BUILD_DIR/texk/dvipdfm-x
-	#DVIPDF_OBJECTS=" $O/agl.o  $O/cff.o $O/cff_dict.o $O/cid.o $O/cidtype0.o $O/cidtype2.o $O/cmap.o $O/cmap_read.o $O/cmap_write.o $O/cs_type2.o $O/dpxconf.o $O/dpxcrypt.o $O/dpxfile.o $O/dpxutil.o $O/dvi.o $O/dvipdfmx.o $O/epdf.o $O/error.o $O/fontmap.o $O/jp2image.o  $O/jpegimage.o $O/bmpimage.o $O/pngimage.o   $O/mfileio.o $O/numbers.o  $O/mem.o $O/mpost.o $O/mt19937ar.o $O/otl_opt.o $O/pdfcolor.o $O/pdfdev.o $O/pdfdoc.o $O/pdfdraw.o $O/pdfencrypt.o $O/pdfencoding.o $O/pdffont.o $O/pdfnames.o $O/pdfobj.o $O/pdfparse.o $O/pdfresource.o $O/pdfximage.o $O/pkfont.o  $O/pst.o $O/pst_obj.o $O/sfnt.o $O/spc_color.o $O/spc_dvipdfmx.o $O/spc_dvips.o $O/spc_html.o $O/spc_misc.o $O/spc_pdfm.o $O/spc_tpic.o $O/spc_util.o $O/spc_xtx.o $O/specials.o $O/subfont.o $O/t1_char.o $O/t1_load.o $O/tfm.o $O/truetype.o $O/tt_aux.o $O/tt_cmap.o $O/tt_glyf.o $O/tt_gsub.o $O/tt_post.o $O/tt_table.o $O/type0.o $O/type1.o $O/type1c.o $O/unicode.o $O/vf.o $O/xbb.o"
-	#DVIPDF_DEPS="-I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 $TEXLIVE_BUILD_DIR/texk/kpathsea/.libs/libkpathsea.a $TEXLIVE_BUILD_DIR/libs/libpng/libpng.a $TEXLIVE_BUILD_DIR/libs/zlib/libz.a $TEXLIVE_BUILD_DIR/libs/libpaper/libpaper.a -lm" 
-	#emcc -g -O2 -s MODULARIZE=1 -s EXPORT_NAME=busytex --pre-js $ROOT/texlive.js -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c
+#build/wasm/xetex.js:
+#	em++ -o $@ --pre-js build/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS) $(OBJ_XETEX_BINXETEX)
+
+build/wasm/busytex.js: build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o build/wasm/texlive/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o
+	emcc -o $@ --pre-js build/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS) $(OBJ_XETEX_BINBUSY) $(OBJ_XETEX_DEPS_BINBUSY) $(OBJ_DVIPDF) $(OBJ_DVIPDF_DEPS) busytex.c -s MODULARIZE=1 -s EXPORT_NAME=busytex 
 
 native: \
 	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
