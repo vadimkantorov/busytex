@@ -212,7 +212,10 @@ build/format/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive/texm
 build/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/fontconfig/texlive.conf
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	echo > build/empty
-	python3 $(EMROOT)/tools/file_packager.py $@ --lz4 --use-preload-cache --preload "build/empty@/bin/busytex" --preload "build/fontconfig@/fontconfig" --preload "texmf.cnf@/texmf.cnf" --preload build/texlive@/texlive --preload "$<@/latex.fmt" --js-output=build/texlive.js
+	python3 $(EMROOT)/tools/file_packager.py $@ --lz4 --use-preload-cache --preload "build/empty@/bin/busytex" --preload "build/fontconfig@/fontconfig" --preload "build/texmf.cnf@/texmf.cnf" --preload build/texlive@/texlive --preload "$<@/latex.fmt" --js-output=build/texlive.js
+
+build/texmf.cnf: build/texlive/texmf-dist
+	cp $</web2c/texmf.cnf $@
 
 
 #build/busytex.js:
