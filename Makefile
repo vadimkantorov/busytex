@@ -46,7 +46,7 @@ LIBS_native_fontconfig_FREETYPE = -L$(ROOT)/build/native/texlive/libs/freetype2/
 
 CCSKIP_wasm_icu = python3 $(ROOT)/ccskip.py "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg" "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata" --
 CCSKIP_wasm_freetype2 = python3 $(ROOT)/ccskip.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
-CCSKIP_wasm_xetex = python3 $(ROOT)/ccskip.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c, ctangle otangle tangle tangleboot ctangleboot tieweb2c) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c, fixwrites makecpool splitup web2c) --
+CCSKIP_wasm_xetex = python3 $(ROOT)/ccskip.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tieweb2c) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
 
 OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
 OPTS_wasm_bibtexu = -e CFLAGS="$(CFLAGS_wasm_bibtexu)" -e CXXFLAGS="$(CFLAGS_wasm_bibtexu)"
@@ -66,7 +66,7 @@ source/fontconfig.patched: source/fontconfig
 	touch $@
 
 source/texlive.patched: source/texlive
-	rm -rf $</texk/upmendex
+	rm -rf $</texk/upmendex $</texk/dviout-util $</texk/dvipsk $</texk/xdvik $</texk/dviljk $</texk/dvipos $</texk/dvidvi $</texk/dvipng $</texk/dvi2tty $</texk/dvisvgm $</texk/dtl $</texk/gregorio $</texk/cjkutils $</texk/musixtnt $</texk/tests $</texk/ttf2pk2 $</texk/ttfdump $</texk/makejvf $</texk/lcdf-typetools || true
 	#for texprog in texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools; do echo "$(SKIP)" > $(ROOT)/$</$$texprog/Makefile.in ; done
 	touch $@
 
@@ -165,68 +165,67 @@ build/fontconfig/texlive.conf:
 	echo '<dir>/texlive/texmf-dist/fonts/type1</dir>' >> $@
 	echo '</fontconfig>' >> $@
 
-build/native/texlive/texk/web2c/xetex: \
-	build/native/texlive/texk/dvipdfm-x/xdvipdfmx \
-	build/native/texlive/texk/bibtex-x/bibtexu \
-	build/native/texlive/libs/teckit/libTECkit.a \
-	build/native/texlive/libs/harfbuzz/libharfbuzz.a \
-	build/native/texlive/libs/graphite2/libgraphite2.a \
-	build/native/texlive/libs/libpng/libpng.a \
-	build/native/texlive/libs/zlib/libz.a \
-	build/native/texlive/libs/libpaper/libpaper.a \
-	build/native/texlive/libs/pplib/libpplib.a \
-	build/native/texlive/libs/freetype2/libfreetype.a \
-	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/native/expat/libexpat.a \
-	build/native/fontconfig/libfontconfig.a 
-	$(MAKE_native) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_native_$(notdir $@))
+build/native/texlive/texk/web2c/xetex: #\
+	#build/native/texlive/texk/dvipdfm-x/xdvipdfmx \
+	#build/native/texlive/texk/bibtex-x/bibtexu \
+	#build/native/texlive/libs/teckit/libTECkit.a \
+	#build/native/texlive/libs/harfbuzz/libharfbuzz.a \
+	#build/native/texlive/libs/graphite2/libgraphite2.a \
+	#build/native/texlive/libs/libpng/libpng.a \
+	#build/native/texlive/libs/zlib/libz.a \
+	#build/native/texlive/libs/libpaper/libpaper.a \
+	#build/native/texlive/libs/pplib/libpplib.a \
+	#build/native/texlive/libs/freetype2/libfreetype.a \
+	#build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	#build/native/expat/libexpat.a \
+	#build/native/fontconfig/libfontconfig.a 
+	$(MAKE_native) make -C $(dir $@) $(MAKEFLAGS) xetex 
 
-build/wasm/texlive/texk/web2c/xetex: \
-	build/native/texlive/texk/web2c/xetex \
-	build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx \
-	build/wasm/texlive/texk/bibtex-x/bibtexu \
-	build/wasm/texlive/libs/teckit/libTECkit.a \
-	build/wasm/texlive/libs/harfbuzz/libharfbuzz.a \
-	build/wasm/texlive/libs/graphite2/libgraphite2.a \
-	build/wasm/texlive/libs/libpng/libpng.a \
-	build/wasm/texlive/libs/zlib/libz.a \
-	build/wasm/texlive/libs/libpaper/libpaper.a \
-	build/wasm/texlive/libs/pplib/libpplib.a \
-	build/wasm/texlive/libs/freetype2/libfreetype.a \
-	build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/wasm/expat/libexpat.a \
-	build/wasm/fontconfig/libfontconfig.a 
-
-	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_wasm_$(notdir $@))
-	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
-	cd build/wasm/texlive/texk/web2c && emcc \
-		-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
-		-DELIDE_CODE \
-		-DHAVE_CONFIG_H \
-		-D__SyncTeX__ \
-		-DGRAPHITE2_STATIC \
-		-I. \
-		-I../../../texk/web2c \
-		-I./w2c  \
-		-I$(ROOT)/build/wasm/texlive/texk \
-		-I$(ROOT)/build/wasm/texlive/g/texk \
-		-I../../../texk/web2c/xetexdir  \
-		-I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2 \
-		-I$(ROOT)/build/wasm/texlive/libs/teckit/include \
-		-I$(ROOT)/build/wasm/texlive/libs/harfbuzz/include \
-		-I$(ROOT)/build/wasm/texlive/libs/graphite2/include \
-		-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
-		-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
-		-I$(ROOT)/build/wasm/texlive/libs/pplib/include \
-		-I../../../texk/web2c/libmd5   \
-		-I../../../texk/web2c/synctexdir \
-		-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
-		-I$(ROOT)/build/wasm/prefix/include \
-		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
-		-I$(ROOT)/source/fontconfig \
-		-Wimplicit \
-		-Wreturn-type \
-		-MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
+build/wasm/texlive/texk/web2c/xetex: #\
+	#build/native/texlive/texk/web2c/xetex \
+	#build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx \
+	#build/wasm/texlive/texk/bibtex-x/bibtexu \
+	#build/wasm/texlive/libs/teckit/libTECkit.a \
+	#build/wasm/texlive/libs/harfbuzz/libharfbuzz.a \
+	#build/wasm/texlive/libs/graphite2/libgraphite2.a \
+	#build/wasm/texlive/libs/libpng/libpng.a \
+	#build/wasm/texlive/libs/zlib/libz.a \
+	#build/wasm/texlive/libs/libpaper/libpaper.a \
+	#build/wasm/texlive/libs/pplib/libpplib.a \
+	#build/wasm/texlive/libs/freetype2/libfreetype.a \
+	#build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	#build/wasm/expat/libexpat.a \
+	#build/wasm/fontconfig/libfontconfig.a 
+	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_wasm_xetex)
+	#cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
+	#cd build/wasm/texlive/texk/web2c && emcc \
+	#	-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+	#	-DELIDE_CODE \
+	#	-DHAVE_CONFIG_H \
+	#	-D__SyncTeX__ \
+	#	-DGRAPHITE2_STATIC \
+	#	-I. \
+	#	-I../../../texk/web2c \
+	#	-I./w2c  \
+	#	-I$(ROOT)/build/wasm/texlive/texk \
+	#	-I$(ROOT)/build/wasm/texlive/g/texk \
+	#	-I../../../texk/web2c/xetexdir  \
+	#	-I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2 \
+	#	-I$(ROOT)/build/wasm/texlive/libs/teckit/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/harfbuzz/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/graphite2/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/pplib/include \
+	#	-I../../../texk/web2c/libmd5   \
+	#	-I../../../texk/web2c/synctexdir \
+	#	-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
+	#	-I$(ROOT)/build/wasm/prefix/include \
+	#	-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+	#	-I$(ROOT)/source/fontconfig \
+	#	-Wimplicit \
+	#	-Wreturn-type \
+	#	-MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
 
 build/install-tl/install-tl:
 	wget --no-clobber $(URL_TEXLIVE_INSTALLER) -P source || true
@@ -245,7 +244,8 @@ build/texlive/texmf-dist: build/install-tl/install-tl build/texlive/profile.inpu
 	cd build/texlive && \
 	$(ROOT)/build/install-tl/install-tl -profile profile.input && \
 	rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
-	#TEXLIVE_INSTALL_PREFIX=/opt/texlive ./install-tl
+	#TEXLIVE_INSTALL_PREFIX=$(dir $@) $< -profile profile.input 
+	#rm -rf $(dir $@)/bin $(dir $@)/readme* $(dir $@)/tlpkg $(dir $@)/install* $(dir $@)/*.html $(dir $@)/texmf-dist/doc $(dir $@)/texmf-var/web2c
 
 build/format/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive/texmf-dist 
 	mkdir -p $(ROOT)/build/format
