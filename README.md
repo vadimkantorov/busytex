@@ -38,11 +38,12 @@ make clean
 
 ### Usage
 ```shell
-BUSYTEX=build/native/busytex
-LATEXFMT=build/latex.fmt
+# browser version, will serve index.html at http://localhost:8080
+python3 serve.py
 
-$BUSYTEX xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=$LATEXFMT example.tex
-$BUSYTEX dvipdfmx example.xdv
+# native version
+build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
+build/native/busytex dvipdfmx example.xdv
 ```
 
 ### References
