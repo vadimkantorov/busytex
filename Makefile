@@ -165,21 +165,68 @@ build/fontconfig/texlive.conf:
 	echo '<dir>/texlive/texmf-dist/fonts/type1</dir>' >> $@
 	echo '</fontconfig>' >> $@
 
-build/%/texlive/texk/web2c/xetex: \
-	build/%/texlive/texk/dvipdfm-x/xdvipdfmx \
-	build/%/texlive/texk/bibtex-x/bibtexu \
-	build/%/texlive/libs/teckit/libTECkit.a \
-	build/%/texlive/libs/harfbuzz/libharfbuzz.a \
-	build/%/texlive/libs/graphite2/libgraphite2.a \
-	build/%/texlive/libs/libpng/libpng.a \
-	build/%/texlive/libs/zlib/libz.a \
-	build/%/texlive/libs/libpaper/libpaper.a \
-	build/%/texlive/libs/pplib/libpplib.a \
-	build/%/texlive/libs/freetype2/libfreetype.a \
-	build/%/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/%/expat/libexpat.a \
-	build/%/fontconfig/libfontconfig.a 
-	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_$*_$(notdir $<))
+build/native/texlive/texk/web2c/xetex: \
+	build/native/texlive/texk/dvipdfm-x/xdvipdfmx \
+	build/native/texlive/texk/bibtex-x/bibtexu \
+	build/native/texlive/libs/teckit/libTECkit.a \
+	build/native/texlive/libs/harfbuzz/libharfbuzz.a \
+	build/native/texlive/libs/graphite2/libgraphite2.a \
+	build/native/texlive/libs/libpng/libpng.a \
+	build/native/texlive/libs/zlib/libz.a \
+	build/native/texlive/libs/libpaper/libpaper.a \
+	build/native/texlive/libs/pplib/libpplib.a \
+	build/native/texlive/libs/freetype2/libfreetype.a \
+	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	build/native/expat/libexpat.a \
+	build/native/fontconfig/libfontconfig.a 
+	$(MAKE_native) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_native_$(notdir $@))
+
+build/wasm/texlive/texk/web2c/xetex: \
+	build/native/texlive/texk/web2c/xetex \
+	build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx \
+	build/wasm/texlive/texk/bibtex-x/bibtexu \
+	build/wasm/texlive/libs/teckit/libTECkit.a \
+	build/wasm/texlive/libs/harfbuzz/libharfbuzz.a \
+	build/wasm/texlive/libs/graphite2/libgraphite2.a \
+	build/wasm/texlive/libs/libpng/libpng.a \
+	build/wasm/texlive/libs/zlib/libz.a \
+	build/wasm/texlive/libs/libpaper/libpaper.a \
+	build/wasm/texlive/libs/pplib/libpplib.a \
+	build/wasm/texlive/libs/freetype2/libfreetype.a \
+	build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
+	build/wasm/expat/libexpat.a \
+	build/wasm/fontconfig/libfontconfig.a 
+
+	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) xetex $(OPTS_wasm_$(notdir $@))
+	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
+	cd build/wasm/texlive/texk/web2c && emcc \
+		-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
+		-DELIDE_CODE \
+		-DHAVE_CONFIG_H \
+		-D__SyncTeX__ \
+		-DGRAPHITE2_STATIC \
+		-I. \
+		-I../../../texk/web2c \
+		-I./w2c  \
+		-I$(ROOT)/build/wasm/texlive/texk \
+		-I$(ROOT)/build/wasm/texlive/g/texk \
+		-I../../../texk/web2c/xetexdir  \
+		-I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2 \
+		-I$(ROOT)/build/wasm/texlive/libs/teckit/include \
+		-I$(ROOT)/build/wasm/texlive/libs/harfbuzz/include \
+		-I$(ROOT)/build/wasm/texlive/libs/graphite2/include \
+		-I$(ROOT)/build/wasm/texlive/libs/libpng/include \
+		-I$(ROOT)/build/wasm/texlive/libs/zlib/include \
+		-I$(ROOT)/build/wasm/texlive/libs/pplib/include \
+		-I../../../texk/web2c/libmd5   \
+		-I../../../texk/web2c/synctexdir \
+		-DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" \
+		-I$(ROOT)/build/wasm/prefix/include \
+		-I$(ROOT)/build/wasm/texlive/libs/icu/include \
+		-I$(ROOT)/source/fontconfig \
+		-Wimplicit \
+		-Wreturn-type \
+		-MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
 
 build/install-tl/install-tl:
 	wget --no-clobber $(URL_TEXLIVE_INSTALLER) -P source || true
@@ -216,7 +263,6 @@ build/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/fontco
 
 build/texmf.cnf: build/texlive/texmf-dist
 	cp $</web2c/texmf.cnf $@
-
 
 #build/busytex.js:
 	#XETEX_OBJECTS="xetex-xetex-pool.o  xetexdir/xetex-xetexextra.o   synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o  xetexdir/libxetex_a-XeTeXFontMgr_FC.o"
