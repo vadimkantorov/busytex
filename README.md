@@ -2,9 +2,12 @@
 
 ```shell
 # install and activate emscripten
-emsdk install 2.0.0 # 5974288502aab433d45f53511e961aaca4079d86
-emsdk activate 2.0.0
-source ./emsdk/emsdk_env.sh
+git clone https://github.com/emscripten-core/emsdk
+pushd emsdk
+./emsdk install 2.0.0
+./emsdk activate 2.0.0
+source emsdk_env.sh
+popd
 
 # clone busytex
 git clone https://github.com/vadimkantorov/busytex
@@ -26,14 +29,17 @@ make build/format/latex.fmt
 # build wasm tools
 make wasm
 make build/fontconfig/texlive.conf
+make build/texlive.data
 
 # clean
 make clean
 ```
 
-### Portable version
-https://dev.to/jochemstoel/bundle-your-node-app-to-a-single-executable-for-windows-linux-and-osx-2c89
-
+### References
+1. [texlive.js](https://github.com/manuels/texlive.js/)
+2. [xetex.js](https://github.com/lyze/xetex-js)
+3. [dvi2html](https://github.com/kisonecat/dvi2html), [web2js](https://github.com/kisonecat/web2js)
+4. [SwiftLaTeX](https://github.com/SwiftLaTeX/SwiftLaTeX)
 
 ### Links
 https://github.com/dmonad/pdftex.js

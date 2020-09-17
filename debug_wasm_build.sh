@@ -49,7 +49,7 @@ CFLAGS_DVIPDFMX="-Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdf
 mkdir -p $BACKUP/texk $BACKUP/texk/web2c
 
 wget --no-clobber $TEXLIVE_SOURCE_URL
-tar -xvf $(basename $TEXLIVE_SOURCE_URL)
+#tar -xvf $(basename $TEXLIVE_SOURCE_URL)
 cd $TEXLIVE_SOURCE_DIR
 
 #mv texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools $BACKUP/texk || true
@@ -57,44 +57,41 @@ cd $TEXLIVE_SOURCE_DIR
 mkdir -p $TEXLIVE_BUILD_DIR
 cd $TEXLIVE_BUILD_DIR
 
-echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
-echo > $FONTCONFIG_CACHE
-CFLAGS="$EMCCFLAGS_TEXLIVE -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
-$EMCONFIGURE ../configure                       \
-  --cache-file=$TEXLIVE_CACHE                   \
-  --prefix=$PREFIX                              \
-  --enable-dump-share                           \
-  --enable-static                               \
-  --enable-xetex                                \
-  --enable-dvipdfm-x                            \
-  --enable-icu                                  \
-  --enable-freetype2                            \
-  --disable-shared                              \
-  --disable-multiplatform                       \
-  --disable-native-texlive-build                \
-  --disable-all-pkgs                            \
-  --without-x                                   \
-  --without-system-cairo                        \
-  --without-system-gmp                          \
-  --without-system-graphite2                    \
-  --without-system-harfbuzz                     \
-  --without-system-libgs                        \
-  --without-system-libpaper                     \
-  --without-system-mpfr                         \
-  --without-system-pixman                       \
-  --without-system-poppler                      \
-  --without-system-xpdf                         \
-  --without-system-icu                          \
-  --without-system-fontconfig                   \
-  --without-system-freetype2                    \
-  --without-system-libpng                       \
-  --without-system-zlib                         \
-  --with-banner-add="_BUSY-$SUFFIX" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
-
-$EMMAKE make $MAKEFLAGS 
-
-exit 1
+#echo 'ac_cv_func_getwd=${ac_cv_func_getwd=no}' > $TEXLIVE_CACHE
+#CFLAGS="$EMCCFLAGS_TEXLIVE -I$TEXLIVE_SOURCE_DIR/texlive-build-$SUFFIX/libs/icu/include -I$FONTCONFIG_SOURCE_DIR"
+#$EMCONFIGURE ../configure                       \
+#  --cache-file=$TEXLIVE_CACHE                   \
+#  --prefix=$PREFIX                              \
+#  --enable-dump-share                           \
+#  --enable-static                               \
+#  --enable-xetex                                \
+#  --enable-dvipdfm-x                            \
+#  --enable-icu                                  \
+#  --enable-freetype2                            \
+#  --disable-shared                              \
+#  --disable-multiplatform                       \
+#  --disable-native-texlive-build                \
+#  --disable-all-pkgs                            \
+#  --without-x                                   \
+#  --without-system-cairo                        \
+#  --without-system-gmp                          \
+#  --without-system-graphite2                    \
+#  --without-system-harfbuzz                     \
+#  --without-system-libgs                        \
+#  --without-system-libpaper                     \
+#  --without-system-mpfr                         \
+#  --without-system-pixman                       \
+#  --without-system-poppler                      \
+#  --without-system-xpdf                         \
+#  --without-system-icu                          \
+#  --without-system-fontconfig                   \
+#  --without-system-freetype2                    \
+#  --without-system-libpng                       \
+#  --without-system-zlib                         \
+#  --with-banner-add="_BUSY-$SUFFIX" CFLAGS="$CFLAGS" CPPFLAGS="$CFLAGS"
 #
+#$EMMAKE make $MAKEFLAGS 
+
 #pushd texk/bibtex-x
 ##$EMMAKE make clean
 #$EMMAKE make $MAKEFLAGS -e CFLAGS="$EMCCFLAGS_BIBTEX" -e CXXFLAGS="$EMCCFLAGS_BIBTEX"
@@ -195,7 +192,7 @@ pushd $TEXLIVE_BUILD_DIR/texk/web2c
 #echo > $ROOT/dummy
 #python3 $EMROOT/tools/file_packager.py $ROOT/texlive.data --lz4  --use-preload-cache --preload "$ROOT/dummy@/bin/busytex" --preload "$ROOT/fontconfig@/fontconfig" --preload "$ROOT/texmf.cnf@/texmf.cnf" --preload "$ROOT/texlive@/texlive" --preload "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt" --js-output=$ROOT/texlive.js
 
-#emcc -g -O2 -s MODULARIZE=1 -s EXPORT_NAME=busytex --pre-js $ROOT/texlive.js -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0  -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c
+emcc -g -O2 -s MODULARIZE=1 -s EXPORT_NAME=busytex --pre-js $ROOT/texlive.js -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' -o $ROOT/busytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c #--js-library $ROOT/exit.js
 
 #https://github.com/emscripten-core/emscripten/issues/12214
 #emcc -g -O2 -s TOTAL_MEMORY=$TOTAL_MEMORY -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -o $ROOT/nodebusytex.js  $XETEX_OBJECTS $XETEX_DEPS $DVIPDF_DEPS $DVIPDF_OBJECTS $ROOT/busytex.c --embed-file "$ROOT/dummy@/bin/busytex" --embed-file "$ROOT/fontconfig@/fontconfig" --embed-file "$ROOT/texmf.cnf@/texmf.cnf" --embed-file "$ROOT/texlive@/texlive" --embed-file "$ROOT/latex_format/base/latex.fmt@/xelatex.fmt"
@@ -210,3 +207,22 @@ pushd $TEXLIVE_BUILD_DIR/texk/web2c
 #TEXMFSYSVAR = /home/web_user
 #TEXMF = {!!$TEXMFDIST,!!$TEXMFLOCAL,!!TEXMFCONFIG}`;
 
+#function callMain(args) {
+#  var entryFunction = Module['_main'];
+#  args = args || [];
+#  var argc = args.length+1;
+#  var argv = stackAlloc((argc + 1) * 4);
+#  HEAP32[argv >> 2] = allocateUTF8OnStack(thisProgram);
+#  for (var i = 1; i < argc; i++) {
+#    HEAP32[(argv >> 2) + i] = allocateUTF8OnStack(args[i - 1]);
+#  }
+#  HEAP32[(argv >> 2) + argc] = 0;
+#  try {
+#    var ret = entryFunction(argc, argv);
+#    // In PROXY_TO_PTHREAD builds, we should never exit the runtime below, as execution is asynchronously handed
+#    // off to a pthread.
+#    // if we're not running an evented main loop, it's time to exit
+#      exit(ret, /* implicit = */ true);
+#  }
+#  catch(e) {
+#    if (e instanceof ExitStatus) {
