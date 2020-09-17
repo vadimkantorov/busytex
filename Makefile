@@ -24,7 +24,6 @@ EMROOT = $(dir $(shell which emcc))
 TOTAL_MEMORY = 536870912
 SKIP = all install:
 
-
 CACHE_native_texlive = $(ROOT)/build/native-texlive.cache
 CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
@@ -67,24 +66,26 @@ OBJ_XETEX_DEPS_BINBUSY = $(addprefix $(ROOT)/build/wasm/texlive/, texk/web2c/xet
 OBJ_DVIPDF = $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, dvipdfmx_.o agl.o cff.o cff_dict.o cid.o cidtype0.o cidtype2.o cmap.o cmap_read.o cmap_write.o cs_type2.o dpxconf.o dpxcrypt.o dpxfile.o dpxutil.o dvi.o  epdf.o error.o fontmap.o jp2image.o  jpegimage.o bmpimage.o pngimage.o   mfileio.o numbers.o  mem.o mpost.o mt19937ar.o otl_opt.o pdfcolor.o pdfdev.o pdfdoc.o pdfdraw.o pdfencrypt.o pdfencoding.o pdffont.o pdfnames.o pdfobj.o pdfparse.o pdfresource.o pdfximage.o pkfont.o  pst.o pst_obj.o sfnt.o spc_color.o spc_dvipdfmx.o spc_dvips.o spc_html.o spc_misc.o spc_pdfm.o spc_tpic.o spc_util.o spc_xtx.o specials.o subfont.o t1_char.o t1_load.o tfm.o truetype.o tt_aux.o tt_cmap.o tt_glyf.o tt_gsub.o tt_post.o tt_table.o type0.o type1.o type1c.o unicode.o vf.o xbb.o)
 OBJ_DVIPDF_DEPS = $(addprefix $(ROOT)/build/wasm/texlive/libs/, libpng/libpng.a zlib/libz.a libpaper/libpaper.a) $(ROOT)/build/wasm/texlive/texk/kpathsea/.libs/libkpathsea.a -lm -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/build/wasm/fontconfig  
 
-source/texlive source/expat source/fontconfig:
-	mkdir -p $@
-	wget --no-clobber $(URL_$(notdir $@)) -O "$@.tar.gz" || true
-	tar -xf "$@.tar.gz" --strip-components=1 --directory="$@"
+source/texlive.downloaded source/expat.downloaded source/fontconfig.downloaded:
+	mkdir -p $(basename $@)
+	wget --no-clobber $(URL_$(notdir $(basename $@))) -O "$(basename $@).tar.gz" || true
+	tar -xf "$(basename $@).tar.gz" --strip-components=1 --directory="$(basename $@)"
+	touch $@
 
-source/fontconfig.patched: source/fontconfig
+source/fontconfig.patched: source/fontconfig source/fontconfig.downloaded
 	patch -d $< -Np1 -i 0002-fix-fcstats-emscripten.patch
 	echo "$(SKIP)" > $</test/Makefile.in 
 	touch $@
 
-source/texlive.patched: source/texlive
+source/texlive.patched: source/texlive source/texlive.downloaded
 	rm -rf $</texk/upmendex $</texk/dviout-util $</texk/dvipsk $</texk/xdvik $</texk/dviljk $</texk/dvipos $</texk/dvidvi $</texk/dvipng $</texk/dvi2tty $</texk/dvisvgm $</texk/dtl $</texk/gregorio $</texk/cjkutils $</texk/musixtnt $</texk/tests $</texk/ttf2pk2 $</texk/ttfdump $</texk/makejvf $</texk/lcdf-typetools || true
 	#for texprog in texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools; do echo "$(SKIP)" > $(ROOT)/$</$$texprog/Makefile.in ; done
 	touch $@
 
-build/%/texlive/configured: source/texlive source/texlive.patched
+build/%/texlive.configured: source/texlive source/texlive.patched
+	mkdir -p $(basename $@)
 	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_$(notdir $<)) 
-	mkdir -p $(dir $@) && cd $(dir $@) && 		\
+	cd $(basename $@) &&                        \
 	$(CONFIGURE_$*) $(ROOT)/$</configure		\
 	  --cache-file=$(CACHE_$*_$(notdir $<))		\
 	  --prefix="$(PREFIX_$*)"					\
@@ -178,25 +179,25 @@ build/wasm/texlive/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o:
 		-MT xetexdir/xetex-xetexextra_.o -MD -MP -MF xetexdir/.deps/xetex-xetexextra_.Tpo -c -o xetexdir/xetex-xetexextra_.o \
 		$(ROOT)/build/wasm/texlive/texk/web2c/xetexdir/xetexextra.c
 
-build/%/texlive/texk/dvipdfm-x/xdvipdfmx build/%/texlive/texk/bibtex-x/bibtexu: build/%/texlive/configured
+build/%/texlive/texk/dvipdfm-x/xdvipdfmx build/%/texlive/texk/bibtex-x/bibtexu: build/%/texlive.configured
 	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) clean
 	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) $(OPTS_$*_$(notdir $@))
 
-build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive/configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
+build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	cd build/wasm/texlive/libs/icu && \
 	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
 	$(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_icu_make) && \
 	echo "$(SKIP)" > icu-build/test/Makefile && \
 	$(MAKE_wasm) make -C icu-build $(MAKEFLAGS) $(OPTS_wasm_icu_make) 
 
-build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive/configured
+build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive.configured
 	make -C build/native/texlive/libs/icu $(MAKEFLAGS)
 	make -C build/native/texlive/libs/icu/icu-build $(MAKEFLAGS)
 
-build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive/configured build/native/texlive/libs/freetype2/libfreetype.a
+build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured build/native/texlive/libs/freetype2/libfreetype.a
 	cd $(dir $@) && $(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_freetype2)
 
-build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive/configured
+build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
 	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) 
 
 build/%/expat/libexpat.a: source/expat
