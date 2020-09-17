@@ -1,5 +1,6 @@
 # [WIP] TexLive 2020 compiled with Emscripten into WebAssembly and bundled into a single executable
 
+### Installation
 ```shell
 # install and activate emscripten
 git clone https://github.com/emscripten-core/emsdk
@@ -33,6 +34,15 @@ make build/texlive.data
 
 # clean
 make clean
+```
+
+### Usage
+```shell
+BUSYTEX=build/native/busytex
+LATEXFMT=build/latex.fmt
+
+$BUSYTEX xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=$LATEXFMT example.tex
+$BUSYTEX dvipdfmx example.xdv
 ```
 
 ### References
