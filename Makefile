@@ -72,22 +72,22 @@ source/texlive.downloaded source/expat.downloaded source/fontconfig.downloaded:
 	tar -xf "$(basename $@).tar.gz" --strip-components=1 --directory="$(basename $@)"
 	touch $@
 
-source/fontconfig.patched: source/fontconfig source/fontconfig.downloaded
-	patch -d $< -Np1 -i 0002-fix-fcstats-emscripten.patch
-	echo "$(SKIP)" > $</test/Makefile.in 
+source/fontconfig.patched: source/fontconfig.downloaded
+	patch -d $(basename $<) -Np1 -i $(ROOT)/0002-fix-fcstats-emscripten.patch
+	echo "$(SKIP)" > source/fontconfig/test/Makefile.in 
 	touch $@
 
-source/texlive.patched: source/texlive source/texlive.downloaded
-	rm -rf $</texk/upmendex $</texk/dviout-util $</texk/dvipsk $</texk/xdvik $</texk/dviljk $</texk/dvipos $</texk/dvidvi $</texk/dvipng $</texk/dvi2tty $</texk/dvisvgm $</texk/dtl $</texk/gregorio $</texk/cjkutils $</texk/musixtnt $</texk/tests $</texk/ttf2pk2 $</texk/ttfdump $</texk/makejvf $</texk/lcdf-typetools || true
+source/texlive.patched: source/texlive.downloaded
+	rm -rf $(addprefix source/texlive/, texk/upmendex texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools) || true
 	#for texprog in texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/upmendex texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools; do echo "$(SKIP)" > $(ROOT)/$</$$texprog/Makefile.in ; done
 	touch $@
 
-build/%/texlive.configured: source/texlive source/texlive.patched
+build/%/texlive.configured: source/texlive.patched
 	mkdir -p $(basename $@)
-	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_$(notdir $<)) 
+	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_texlive) 
 	cd $(basename $@) &&                        \
-	$(CONFIGURE_$*) $(ROOT)/$</configure		\
-	  --cache-file=$(CACHE_$*_$(notdir $<))		\
+	$(CONFIGURE_$*) $(ROOT)/source/texlive/configure		\
+	  --cache-file=$(CACHE_$*_texlive)  		\
 	  --prefix="$(PREFIX_$*)"					\
 	  --enable-dump-share						\
 	  --enable-static							\
@@ -116,8 +116,8 @@ build/%/texlive.configured: source/texlive source/texlive.patched
 	  --without-system-libpng					\
 	  --without-system-zlib						\
 	  --with-banner-add="_BUSY$*"				\
-		CFLAGS="$(CFLAGS_$*_$(notdir $<))"		\
-	  CPPFLAGS="$(CFLAGS_$*_$(notdir $<))" &&   \
+		CFLAGS="$(CFLAGS_$*_texlive)"		\
+	  CPPFLAGS="$(CFLAGS_$*_texlive)" &&   \
 	$(MAKE_$*) make $(MAKEFLAGS)  				
 	touch $@
 
@@ -200,7 +200,7 @@ build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured b
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
 	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) 
 
-build/%/expat/libexpat.a: source/expat
+build/%/expat/libexpat.a: source/expat.downloaded
 	mkdir -p $(dir $@) && cd $(dir $@) && \
 	$(CMAKE_$*) cmake \
 	   -DCMAKE_INSTALL_PREFIX="$(PREFIX_$*)" \
@@ -211,12 +211,12 @@ build/%/expat/libexpat.a: source/expat
 	   -DEXPAT_BUILD_FUZZERS=off \
 	   -DEXPAT_BUILD_TESTS=off \
 	   -DEXPAT_BUILD_TOOLS=off \
-	   $(ROOT)/$< && \
+	   $(ROOT)/$(basename $<) && \
 	$(MAKE_$*) make $(MAKEFLAGS)
 
-build/%/fontconfig/libfontconfig.a: source/fontconfig build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
+build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
-	$(CONFIGURE_$*) $(ROOT)/$</configure \
+	$(CONFIGURE_$*) $(ROOT)/$(basename $<)/configure \
 	   --cache-file=$(CACHE_$*_$(notdir $<))		 \
 	   --prefix=$(PREFIX_$*) \
 	   --enable-static \
