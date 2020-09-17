@@ -18,7 +18,8 @@ int main(int argc, char* argv[])
         argv[1] = argv[0];
         return busymain_dvipdfmx(argc - 1, argv + 1);
     }
-    /*else if(strcmp("latexmk", argv[1]) == 0)
+    /* Cant do this because busymain_* use exit to return control. It would require overriding exit to do coroutines and build with -fno-builtin-exit
+     * else if(strcmp("latexmk", argv[1]) == 0)
     {
         argv[1] = argv[0];
         int ret = busymain_xetex(argc - 1, argv + 1);
