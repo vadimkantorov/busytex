@@ -17,22 +17,23 @@ cd busytex
 # set make parallelism
 export MAKEFLAGS=-j8
 
+# download and patch texlive source
+make texlive
+
 # build native tools
 make native
 
 # build TeX Directory Structure (TDS) and latex format file (latex.fmt)
-make build/install-tl/install-tl
-make build/texlive/profile.input
-make build/texlive/texmf-dist
-make build/format/latex.fmt
+make tds
 
 # build wasm tools
 make wasm
-make build/fontconfig/texlive.conf
-make build/texlive.data
 
-# clean
-make clean
+# installs into ./install
+# make install
+
+# clean if needed
+make clean # removes build and install directories
 ```
 
 ### Usage
@@ -46,7 +47,12 @@ python3 serve.py
 # node regu version
 # TODO
 
-#TODO: set env TEXMFCNF, TEXMFDIST, FONTCONFIG_PATH, FONTCONFIG_FILE
+### native versions ###
+
+export FONTCONFIG_PATH=./install/fontconfig
+export FONTCONFIG_FILE=texlive.conf
+export TEXMFCNF=./install/texmf.cnf
+export TEXMFDIST=./install/texlive/texmf-dist
 
 # native busy version
 build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
@@ -55,6 +61,8 @@ build/native/busytex dvipdfmx example.xdv
 # native norm version
 build/native/texlive/texk/web2c/xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
 build/native/texlive/texk/dvipdfm-x/xdvipdfmx example.xdv
+###
+
 ```
 
 ### References
