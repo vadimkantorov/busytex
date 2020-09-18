@@ -24,7 +24,6 @@ make native
 make build/install-tl/install-tl
 make build/texlive/profile.input
 make build/texlive/texmf-dist
-make source/base
 make build/format/latex.fmt
 
 # build wasm tools
@@ -38,12 +37,24 @@ make clean
 
 ### Usage
 ```shell
-# browser version, will serve index.html at http://localhost:8080
+# browser busy version, will serve index.html at http://localhost:8080
 python3 serve.py
 
-# native version
+# node busy version
+# TODO
+
+# node regu version
+# TODO
+
+#TODO: set env TEXMFCNF, TEXMFDIST, FONTCONFIG_PATH, FONTCONFIG_FILE
+
+# native busy version
 build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
 build/native/busytex dvipdfmx example.xdv
+
+# native norm version
+build/native/texlive/texk/web2c/xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
+build/native/texlive/texk/dvipdfm-x/xdvipdfmx example.xdv
 ```
 
 ### References

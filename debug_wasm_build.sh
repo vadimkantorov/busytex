@@ -166,7 +166,8 @@ cd $TEXLIVE_BUILD_DIR
 #
 ## rebuild custom xetex-xetex0.o, because of offsets problems
 pushd $TEXLIVE_BUILD_DIR/texk/web2c
-#$EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP_XETEX em++"
+$EMMAKE make $MAKEFLAGS xetex CC="$EMCCSKIP_XETEX emcc" CXX="$EMCCSKIP_XETEX em++"
+
 #cp $TEXLIVE_SOURCE_DIR/texlive-build-native/texk/web2c/*.c $TEXLIVE_BUILD_DIR/texk/web2c
 #emcc -DHAVE_CONFIG_H -I. -I../../../texk/web2c -I./w2c  -I$TEXLIVE_BUILD_DIR/texk -I$TEXLIVE_SOURCE_DIR/texk -I../../../texk/web2c/xetexdir  -I$TEXLIVE_BUILD_DIR/libs/freetype2/freetype2 -I$TEXLIVE_BUILD_DIR/libs/teckit/include -I$TEXLIVE_BUILD_DIR/libs/harfbuzz/include -I$TEXLIVE_BUILD_DIR/libs/graphite2/include -DGRAPHITE2_STATIC -I$TEXLIVE_BUILD_DIR/libs/libpng/include -I$TEXLIVE_BUILD_DIR/libs/zlib/include -I$TEXLIVE_BUILD_DIR/libs/pplib/include -I../../../texk/web2c/libmd5   -I../../../texk/web2c/synctexdir -D__SyncTeX__ -DSYNCTEX_ENGINE_H=\"synctex-xetex.h\" -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I/mnt/c/Users/user/xetex2020.js/fontconfig-2.13.1 -Wimplicit -Wreturn-type -s ERROR_ON_UNDEFINED_SYMBOLS=0 -DELIDE_CODE -I/mnt/c/Users/user/xetex2020.js/prefix-wasm/include -I$TEXLIVE_BUILD_DIR/libs/icu/include -I$ROOT/fontconfig-2.13.1 -MT xetex-xetex0.o -MD -MP -MF .deps/xetex-xetex0.Tpo -c -o xetex-xetex0.o xetex0.c
 #
