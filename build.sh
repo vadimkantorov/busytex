@@ -20,7 +20,7 @@ make build/native/texlive/libs/icu/icu-build/bin/icupkg
 make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
 make build/native/expat/libexpat.a
 make build/native/fontconfig/libfontconfig.a 
-make build/native/texlive/texk/bibtex-x/bibtexu 
+#make build/native/texlive/texk/bibtex-x/bibtexu 
 make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
 make build/native/texlive/texk/web2c/xetex
 
@@ -30,7 +30,7 @@ make build/texlive/texmf-dist
 make build/format/latex.fmt
 make build/texmf.cnf
 make build/fontconfig/texlive.conf
-make build/texlive.data
+make build/wasm/texlive.data
 
 make build/wasm/texlive.configured
 make build/wasm/texlive/libs/libpng/libpng.a 
@@ -45,7 +45,7 @@ make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a
 make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
 make build/wasm/expat/libexpat.a
 make build/wasm/fontconfig/libfontconfig.a 
-make build/wasm/texlive/texk/bibtex-x/bibtexu 
+#make build/wasm/texlive/texk/bibtex-x/bibtexu 
 make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx 
 
 make build/wasm/texlive/texk/web2c/xetex-xetex0.o

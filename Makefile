@@ -123,7 +123,7 @@ build/%/texlive.configured: source/texlive.patched
 	  --with-banner-add="_BUSY$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"		\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)" &&   \
-	$(MAKE_$*) make $(MAKEFLAGS)  				
+	$(MAKE_$*) make $(MAKEFLAGS) 
 	touch $@
 
 build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o:
@@ -279,7 +279,6 @@ build/wasm/texlive/texk/web2c/xetex-xetex0.o: #\
 	#build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
 	#build/wasm/expat/libexpat.a \
 	#build/wasm/fontconfig/libfontconfig.a 
-	
 	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) xetex synctexdir/xetex-synctex.o $(OPTS_wasm_xetex)
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	cd build/wasm/texlive/texk/web2c && emcc \
@@ -357,39 +356,69 @@ build/wasm/xetex.js: build/wasm/texlive/texk/web2c/xetex-xetex0.o
 build/wasm/busytex.js: build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o build/wasm/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patched 
 	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ --pre-js $(ROOT)/build/wasm/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS) $(OBJ_XETEX_BINBUSY) $(OBJ_XETEX_DEPS_BINBUSY) $(OBJ_DVIPDF) $(OBJ_DVIPDF_DEPS)  -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
 
-native: \
-	build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/native/texlive/libs/icu/icu-build/lib/libicudata.a \
-	build/native/texlive/libs/icu/icu-build/bin/icupkg \
-	build/native/texlive/libs/icu/icu-build/bin/pkgdata \
-	build/native/texlive/libs/teckit/libTECkit.a \
-	build/native/texlive/libs/harfbuzz/libharfbuzz.a \
-	build/native/texlive/libs/graphite2/libgraphite2.a \
-	build/native/texlive/libs/libpng/libpng.a \
-	build/native/texlive/libs/zlib/libz.a \
-	build/native/texlive/libs/pplib/libpplib.a \
-	build/native/texlive/libs/libpaper/libpaper.a \
-	build/native/texlive/libs/freetype2/libfreetype.a \
-	build/native/expat/libexpat.a \
-	build/native/fontconfig/libfontconfig.a \
-	build/native/texlive/texk/web2c/xetex
-	echo native tools built
+texlive:
+	make source/texlive.downloaded
+	make source/texlive.patched
 
-wasm: \
-	build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx \
-	build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a \
-	build/wasm/texlive/libs/teckit/libTECkit.a \
-	build/wasm/texlive/libs/harfbuzz/libharfbuzz.a \
-	build/wasm/texlive/libs/graphite2/libgraphite2.a \
-	build/wasm/texlive/libs/libpng/libpng.a \
-	build/wasm/texlive/libs/zlib/libz.a \
-	build/wasm/texlive/libs/pplib/libpplib.a \
-	build/wasm/texlive/libs/libpaper/libpaper.a \
-	build/wasm/texlive/libs/freetype2/libfreetype.a \
-	build/wasm/expat/libexpat.a \
-	build/wasm/fontconfig/libfontconfig.a 
-	echo wasm tools built
+native: 
+	make build/native/texlive.configured
+	make build/native/texlive/libs/libpng/libpng.a 
+	make build/native/texlive/libs/libpaper/libpaper.a 
+	make build/native/texlive/libs/zlib/libz.a 
+	make build/native/texlive/libs/teckit/libTECkit.a 
+	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/native/texlive/libs/graphite2/libgraphite2.a 
+	make build/native/texlive/libs/pplib/libpplib.a 
+	make build/native/texlive/libs/freetype2/libfreetype.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	make build/native/expat/libexpat.a
+	make build/native/fontconfig/libfontconfig.a 
+	#
+	#make build/native/texlive/texk/bibtex-x/bibtexu 
+	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
+	make build/native/texlive/texk/web2c/xetex
+
+tds:
+	make build/install-tl/install-tl
+	make build/texlive/profile.input
+	make build/texlive/texmf-dist
+	make build/format/latex.fmt
+	make build/texmf.cnf
+	make build/fontconfig/texlive.conf
+	make build/wasm/texlive.data
+
+wasm:
+	make build/wasm/texlive.configured
+	make build/wasm/texlive/libs/libpng/libpng.a 
+	make build/wasm/texlive/libs/libpaper/libpaper.a 
+	make build/wasm/texlive/libs/zlib/libz.a 
+	make build/wasm/texlive/libs/teckit/libTECkit.a 
+	make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/wasm/texlive/libs/graphite2/libgraphite2.a 
+	make build/wasm/texlive/libs/pplib/libpplib.a 
+	make build/wasm/texlive/libs/freetype2/libfreetype.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/wasm/expat/libexpat.a
+	make build/wasm/fontconfig/libfontconfig.a 
+	#
+	#make build/wasm/texlive/texk/bibtex-x/bibtexu 
+	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx 
+	make build/wasm/texlive/texk/web2c/xetex-xetex0.o
+	make build/wasm/xetex.js
+	make build/wasm/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o
+	make build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o
+	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patched 
+	make build/wasm/busytex.js
+
+all:
+	make texlive
+	make native
+	make tds
+	make wasm
 
 clean_native:
 	rm -rf build/native
@@ -401,4 +430,4 @@ clean:
 	rm -rfbuild
 
 .PHONY:
-	native clean clean_native clean_format
+	all texlive tds native wasm clean clean_native clean_format
