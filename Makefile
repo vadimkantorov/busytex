@@ -47,15 +47,16 @@ LIBS_wasm_fontconfig_FREETYPE = -L$(ROOT)/build/wasm/texlive/libs/freetype2/ -lf
 CFLAGS_native_texlive = -I$(ROOT)/build/native/texlive/libs/icu/include -I$(ROOT)/source/fontconfig
 CFLAGS_native_fontconfig_FREETYPE = -I$(ROOT)/build/native/texlive/libs/freetype2/ -I$(ROOT)/build/native/texlive/libs/freetype2/freetype2/
 LIBS_native_fontconfig_FREETYPE = -L$(ROOT)/build/native/texlive/libs/freetype2/ -lfreetype
+PKGDATAFLAGS_wasm_icu = --without-assembly -O $(ROOT)/build/wasm/texlive/libs/icu/icu-build/data/icupkg.inc
 
-CCSKIP_wasm_icu = python3 $(ROOT)/ccskip.py "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg" "$(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata" --
+CCSKIP_wasm_icu = python3 $(ROOT)/ccskip.py $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata --
 CCSKIP_wasm_freetype2 = python3 $(ROOT)/ccskip.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
 CCSKIP_wasm_xetex = python3 $(ROOT)/ccskip.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tie xetex) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
 
-OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
-OPTS_wasm_bibtexu = -e CFLAGS="$(CFLAGS_wasm_bibtexu)" -e CXXFLAGS="$(CFLAGS_wasm_bibtexu)"
 OPTS_wasm_icu_configure = CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
-OPTS_wasm_icu_make = -e PKGDATA_OPTS="--without-assembly -O $(ROOT)/build/wasm/texlive/libs/icu/icu-build/data/icupkg.inc" -e CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" -e CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
+OPTS_wasm_icu_make = -e PKGDATA_OPTS="$(PKGDATAFLAGS_wasm_icu)" -e CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" -e CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
+OPTS_wasm_bibtexu = -e CFLAGS="$(CFLAGS_wasm_bibtexu)" -e CXXFLAGS="$(CFLAGS_wasm_bibtexu)"
+OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
 OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc" CXX="$(CCSKIP_wasm_xetex) em++"
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX)" CXX="em++ $(CFLAGS_XDVIPDFMX)"
 OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIPDFMX)"
@@ -214,7 +215,7 @@ build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs
 	make -C build/native/texlive/libs/icu/icu-build 
 
 build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured build/native/texlive/libs/freetype2/libfreetype.a
-	cd $(dir $@) && $(MAKE_wasm) make  $(OPTS_wasm_freetype2)
+	cd $(dir $@) && $(MAKE_wasm) make $(OPTS_wasm_freetype2)
 
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
 	$(MAKE_$*) make -C $(dir $@)  
@@ -229,9 +230,9 @@ build/%/expat/libexpat.a: source/expat.downloaded
 	   -DEXPAT_BUILD_EXAMPLES=off \
 	   -DEXPAT_BUILD_FUZZERS=off \
 	   -DEXPAT_BUILD_TESTS=off \
-	   -DEXPAT_BUILD_TOOLS=off \
-	   $(ROOT)/$(basename $<) && \
-	$(MAKE_$*) make 
+	   -DEXPAT_BUILD_TOOLS=off
+	   $(ROOT)/$(basename $<) 
+	$(MAKE_$*) make -C $(dir $@)
 
 build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
@@ -359,24 +360,24 @@ texlive:
 	make source/texlive.patched
 
 native: 
-	make build/native/texlive.configured
-	make build/native/texlive/libs/libpng/libpng.a 
-	make build/native/texlive/libs/libpaper/libpaper.a 
-	make build/native/texlive/libs/zlib/libz.a 
-	make build/native/texlive/libs/teckit/libTECkit.a 
-	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	make build/native/texlive/libs/graphite2/libgraphite2.a 
-	make build/native/texlive/libs/pplib/libpplib.a 
-	make build/native/texlive/libs/freetype2/libfreetype.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	make build/native/expat/libexpat.a
-	make build/native/fontconfig/libfontconfig.a 
-	#make build/native/texlive/texk/bibtex-x/bibtexu 
-	#make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
-	make build/native/texlive/texk/web2c/xetex
+	#make build/native/texlive.configured
+	#make build/native/texlive/libs/libpng/libpng.a 
+	#make build/native/texlive/libs/libpaper/libpaper.a 
+	#make build/native/texlive/libs/zlib/libz.a 
+	#make build/native/texlive/libs/teckit/libTECkit.a 
+	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	#make build/native/texlive/libs/graphite2/libgraphite2.a 
+	#make build/native/texlive/libs/pplib/libpplib.a 
+	#make build/native/texlive/libs/freetype2/libfreetype.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	#make build/native/expat/libexpat.a
+	#make build/native/fontconfig/libfontconfig.a 
+	##make build/native/texlive/texk/bibtex-x/bibtexu 
+	##make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
+	#make build/native/texlive/texk/web2c/xetex
 	# busy version
 	make build/native/texlive/texk/web2c/xetexdir/xetex-xetexextra.patchedmain.o
 	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
