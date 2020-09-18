@@ -36,7 +36,6 @@ CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
 CFLAGS_XDVIPDFMX = -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png
 
-CFLAGS_wasm_expat = -s USE_PTHREADS=0 -s NO_FILESYSTEM=1
 CFLAGS_wasm_bibtexu = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
 CFLAGS_wasm_texlive = -s ERROR_ON_UNDEFINED_SYMBOLS=0 -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/source/fontconfig
 CFLAGS_wasm_icu = -s ERROR_ON_UNDEFINED_SYMBOLS=0
@@ -224,7 +223,6 @@ build/%/expat/libexpat.a: source/expat.downloaded
 	mkdir -p $(dir $@) && cd $(dir $@) && \
 	$(CMAKE_$*) cmake \
 	   -DCMAKE_INSTALL_PREFIX="$(PREFIX_$*)" \
-	   -DCMAKE_C_FLAGS="$(CFLAGS_$*_$(notdir $<))" \
 	   -DEXPAT_BUILD_DOCS=off \
 	   -DEXPAT_SHARED_LIBS=off \
 	   -DEXPAT_BUILD_EXAMPLES=off \
@@ -256,21 +254,8 @@ build/fontconfig/texlive.conf:
 	echo '<dir>/texlive/texmf-dist/fonts/type1</dir>' >> $@
 	echo '</fontconfig>' >> $@
 
-build/native/texlive/texk/web2c/xetex: #\
-	#build/native/texlive/texk/dvipdfm-x/xdvipdfmx \
-	#build/native/texlive/texk/bibtex-x/bibtexu \
-	#build/native/texlive/libs/teckit/libTECkit.a \
-	#build/native/texlive/libs/harfbuzz/libharfbuzz.a \
-	#build/native/texlive/libs/graphite2/libgraphite2.a \
-	#build/native/texlive/libs/libpng/libpng.a \
-	#build/native/texlive/libs/zlib/libz.a \
-	#build/native/texlive/libs/libpaper/libpaper.a \
-	#build/native/texlive/libs/pplib/libpplib.a \
-	#build/native/texlive/libs/freetype2/libfreetype.a \
-	#build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
-	#build/native/expat/libexpat.a \
-	#build/native/fontconfig/libfontconfig.a 
-	$(MAKE_native) make -C $(dir $@)  xetex 
+build/native/texlive/texk/web2c/xetex: 
+	$(MAKE_native) make -C $(dir $@) xetex 
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o:
 	# copying generated C files from native version, since string offsets are off
@@ -360,24 +345,24 @@ texlive:
 	make source/texlive.patched
 
 native: 
-	#make build/native/texlive.configured
-	#make build/native/texlive/libs/libpng/libpng.a 
-	#make build/native/texlive/libs/libpaper/libpaper.a 
-	#make build/native/texlive/libs/zlib/libz.a 
-	#make build/native/texlive/libs/teckit/libTECkit.a 
-	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	#make build/native/texlive/libs/graphite2/libgraphite2.a 
-	#make build/native/texlive/libs/pplib/libpplib.a 
-	#make build/native/texlive/libs/freetype2/libfreetype.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	#make build/native/expat/libexpat.a
-	#make build/native/fontconfig/libfontconfig.a 
-	##make build/native/texlive/texk/bibtex-x/bibtexu 
-	##make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
-	#make build/native/texlive/texk/web2c/xetex
+	make build/native/texlive.configured
+	make build/native/texlive/libs/libpng/libpng.a 
+	make build/native/texlive/libs/libpaper/libpaper.a 
+	make build/native/texlive/libs/zlib/libz.a 
+	make build/native/texlive/libs/teckit/libTECkit.a 
+	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/native/texlive/libs/graphite2/libgraphite2.a 
+	make build/native/texlive/libs/pplib/libpplib.a 
+	make build/native/texlive/libs/freetype2/libfreetype.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	make build/native/expat/libexpat.a
+	make build/native/fontconfig/libfontconfig.a 
+	#make build/native/texlive/texk/bibtex-x/bibtexu 
+	#make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
+	make build/native/texlive/texk/web2c/xetex
 	# busy version
 	make build/native/texlive/texk/web2c/xetexdir/xetex-xetexextra.patchedmain.o
 	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
