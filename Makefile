@@ -123,7 +123,7 @@ build/%/texlive.configured: source/texlive.patched
 	  --with-banner-add="_BUSY$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"		\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)" &&   \
-	$(MAKE_$*) make $(MAKEFLAGS) 
+	$(MAKE_$*) make  
 	touch $@
 
 build/wasm/texlive/texk/dvipdfm-x/dvipdfmx_.o:
@@ -191,26 +191,26 @@ build/wasm/texlive/texk/web2c/xetexdir/xetex-xetexextra_.o:
 		$(ROOT)/source/texlive/texk/web2c/xetexdir/xetexextra.c
 
 build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patched build/%/texlive/texk/bibtex-x/bibtexu.patched: build/%/texlive.configured
-	$(MAKE_$*) make -C $(dir $(basename $@)) $(MAKEFLAGS) clean
-	$(MAKE_$*) make -C $(dir $(basename $@)) $(MAKEFLAGS) $(OPTS_$*_$(notdir $(basename $@)))
+	$(MAKE_$*) make -C $(dir $(basename $@))  clean
+	$(MAKE_$*) make -C $(dir $(basename $@))  $(OPTS_$*_$(notdir $(basename $@)))
 	touch $@
 
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	cd build/wasm/texlive/libs/icu && \
 	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
-	$(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_icu_make) && \
+	$(MAKE_wasm) make  $(OPTS_wasm_icu_make) && \
 	echo "$(SKIP)" > icu-build/test/Makefile && \
-	$(MAKE_wasm) make -C icu-build $(MAKEFLAGS) $(OPTS_wasm_icu_make) 
+	$(MAKE_wasm) make -C icu-build  $(OPTS_wasm_icu_make) 
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive.configured
-	make -C build/native/texlive/libs/icu $(MAKEFLAGS)
-	make -C build/native/texlive/libs/icu/icu-build $(MAKEFLAGS)
+	make -C build/native/texlive/libs/icu 
+	make -C build/native/texlive/libs/icu/icu-build 
 
 build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured build/native/texlive/libs/freetype2/libfreetype.a
-	cd $(dir $@) && $(MAKE_wasm) make $(MAKEFLAGS) $(OPTS_wasm_freetype2)
+	cd $(dir $@) && $(MAKE_wasm) make  $(OPTS_wasm_freetype2)
 
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
-	$(MAKE_$*) make -C $(dir $@) $(MAKEFLAGS) 
+	$(MAKE_$*) make -C $(dir $@)  
 
 build/%/expat/libexpat.a: source/expat.downloaded
 	mkdir -p $(dir $@) && cd $(dir $@) && \
@@ -224,7 +224,7 @@ build/%/expat/libexpat.a: source/expat.downloaded
 	   -DEXPAT_BUILD_TESTS=off \
 	   -DEXPAT_BUILD_TOOLS=off \
 	   $(ROOT)/$(basename $<) && \
-	$(MAKE_$*) make $(MAKEFLAGS)
+	$(MAKE_$*) make 
 
 build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
@@ -237,7 +237,7 @@ build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libe
 	   --with-expat-includes="$(ROOT)/source/expat/lib" \
 	   --with-expat-lib="$(ROOT)/build/$*/expat" \
 	   CFLAGS="$(CFLAGS_$*_fontconfig)" FREETYPE_CFLAGS="$(CFLAGS_$*_fontconfig_FREETYPE)" FREETYPE_LIBS="$(LIBS_$*_fontconfig_FREETYPE)" && \
-	$(MAKE_$*) make $(MAKEFLAGS)
+	$(MAKE_$*) make 
 
 build/fontconfig/texlive.conf:
 	mkdir -p $(dir $@)
@@ -262,7 +262,7 @@ build/native/texlive/texk/web2c/xetex: #\
 	#build/native/texlive/libs/icu/icu-build/lib/libicuuc.a \
 	#build/native/expat/libexpat.a \
 	#build/native/fontconfig/libfontconfig.a 
-	$(MAKE_native) make -C $(dir $@) $(MAKEFLAGS) xetex 
+	$(MAKE_native) make -C $(dir $@)  xetex 
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o: #\
 	#build/native/texlive/texk/web2c/xetex \
@@ -279,7 +279,7 @@ build/wasm/texlive/texk/web2c/xetex-xetex0.o: #\
 	#build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a \
 	#build/wasm/expat/libexpat.a \
 	#build/wasm/fontconfig/libfontconfig.a 
-	$(MAKE_wasm) make -C $(dir $@) $(MAKEFLAGS) xetex synctexdir/xetex-synctex.o $(OPTS_wasm_xetex)
+	$(MAKE_wasm) make -C $(dir $@)  xetex synctexdir/xetex-synctex.o $(OPTS_wasm_xetex)
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	cd build/wasm/texlive/texk/web2c && emcc \
 		-s ERROR_ON_UNDEFINED_SYMBOLS=0 \
