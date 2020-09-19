@@ -29,11 +29,11 @@ make tds
 # build wasm tools
 make wasm
 
-# installs into ./install
-# make install
+# copies binaries and TexLive TDS into ./dist
+# make dist
 
-# clean if needed
-make clean # removes build and install directories
+# remove build and source completely
+make clean
 ```
 
 ### Usage
@@ -42,10 +42,10 @@ make clean # removes build and install directories
 python3 serve.py
 
 # local version
-export FONTCONFIG_PATH=./install/fontconfig
+export FONTCONFIG_PATH=./dist/fontconfig
 export FONTCONFIG_FILE=texlive.conf
-export TEXMFCNF=./install/texmf.cnf
-export TEXMFDIST=./install/texlive/texmf-dist
+export TEXMFCNF=./dist/texmf.cnf
+export TEXMFDIST=./dist/texlive/texmf-dist
 
 # node version
 build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex

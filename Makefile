@@ -249,11 +249,11 @@ build/texmf.cnf: build/texlive/texmf-dist
 
 ################################################################################################################
 
-build/native/busytex: build/native/texlive/texk/web2c/xetexdir/xetex-xetexextra.o build/native/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
+build/native/busytex:
 	cd build/native/texlive/texk/web2c/ && $(CC) -o $(ROOT)/$@ $(OBJ_XETEX) $(OBJ_XETEX_DEPS_native) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/native/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/native/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_native) $(ROOT)/busytex.c
 
-build/wasm/busytex.js: build/wasm/texlive/texk/web2c/xetexdir/xetex-xetexextra.o build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
-	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ --pre-js $(ROOT)/build/wasm/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm) -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
+build/wasm/busytex.js: 
+	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ --pre-js $(ROOT)/build/wasm/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm) -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
 
 ################################################################################################################
 
@@ -320,6 +320,12 @@ clean_format:
 	rm -rf build/format
 
 clean:
-	rm -rf build
+	rm -rf build source
 
-.PHONY:	all texlive tds native wasm clean clean_native clean_format
+dist:
+	mkdir -p $@
+	cp build/wasm/texlive.data build/wasm/texlive.js build/wasm/busytex.wasm build/wasm/busytex.js $@
+	cp -r build/texmf.cnf build/texlive build/fontconfig $@
+	#cp build/native/busytex $@
+
+.PHONY:	install all texlive tds native wasm clean clean_native clean_format

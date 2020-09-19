@@ -16,29 +16,52 @@ Hello, world!
 <script type="text/javascript" src="busytex.js"></script>
 <script>
 
+const bin_busytex = '/bin/busytex';
+const fmt_latex = '/latex.fmt';
+const dir_texmfdist = '/texlive/texmf-dist:';
+const cnf_texlive = '/texmf.cnf';
+const dir_fontconfig = '/fontconfig';
+const conf_fontconfig = 'texlive.conf';
+
 const home = '/home/web_user';
 const source_path = home + '/source.tex';
-const fmt_latex = '/latex.fmt';
-const cnf_texlive = '/texmf.cnf';
-const bin_busytex = '/bin/busytex';
-const dir_texmfdist = '/texlive/texmf-dist:';
-const dir_fontconfig = '/fontconfig';
-const conf_fontconfig = 'texlive-fontconfig.conf';
 
-ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
+function NOCLEANUP_callMain(Module, args)
+{
+	const entryFunction = Module['_main'];
+	const argc = args.length+1;
+	const argv = Module.stackAlloc((argc + 1) * 4);
+	Module.HEAP32[argv >> 2] = Module.allocateUTF8OnStack(Module.thisProgram);
+	for (let i = 1; i < argc; i++) 
+		Module.HEAP32[(argv >> 2) + i] = Module.allocateUTF8OnStack(args[i - 1]);
+	Module.HEAP32[(argv >> 2) + argc] = 0;
+	try
+	{
+		entryFunction(argc, argv);
+	}
+	catch(e)
+	{
+		return e;
+	}
+	return 0;
+}
+
 
 function main(Module)
 {
     const FS = Module.FS;
+	const ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
     
     const source = document.getElementById('source').value;
 
     FS.chdir(home);
     FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
     
-    FS.readFile('/latex.fmt')
-    Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]);
-    Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
+    console.log('Called', NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]));
+    console.log('Called', NOCLEANUP_callMain(Module, ['dvipdfmx', source_path.replace('.tex', '.xdv')]));
+    
+    //Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]);
+    //Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
     
     const pdf = FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
     document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
