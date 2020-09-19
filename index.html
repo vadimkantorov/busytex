@@ -36,6 +36,7 @@ function main(Module)
     FS.chdir(home);
     FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
     
+    FS.readFile('/latex.fmt')
     Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]);
     Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
     
