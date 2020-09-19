@@ -38,31 +38,22 @@ make clean # removes build and install directories
 
 ### Usage
 ```shell
-# browser busy version, will serve index.html at http://localhost:8080
+# browser version, will serve index.html at http://localhost:8080
 python3 serve.py
 
-# node busy version
-# TODO
-
-# node regu version
-# TODO
-
-### native versions ###
-
+# local version
 export FONTCONFIG_PATH=./install/fontconfig
 export FONTCONFIG_FILE=texlive.conf
 export TEXMFCNF=./install/texmf.cnf
 export TEXMFDIST=./install/texlive/texmf-dist
 
-# native busy version
+# node version
 build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
 build/native/busytex dvipdfmx example.xdv
 
-# native norm version
-build/native/texlive/texk/web2c/xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
-build/native/texlive/texk/dvipdfm-x/xdvipdfmx example.xdv
-###
-
+### native versions 
+build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
+build/native/busytex dvipdfmx example.xdv
 ```
 
 ### References
