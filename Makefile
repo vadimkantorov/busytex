@@ -324,8 +324,7 @@ clean:
 
 dist:
 	mkdir -p $@
-	cp build/wasm/texlive.data build/wasm/busytex.wasm build/wasm/busytex.js $@
-	cp -r build/texmf.cnf build/texlive build/fontconfig $@
-	#cp build/native/busytex $@
+	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
+	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
 .PHONY:	install all texlive tds native wasm clean clean_dist clean_native clean_format
