@@ -12,6 +12,7 @@ URL_TEXLIVE_BASE = http://mirrors.ctan.org/macros/latex/base.zip
 URL_TEXLIVE_INSTALLER = http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 
 ROOT := $(CURDIR)
+EMROOT := $(dir $(shell which emcc))
 
 TEXLIVE_BUILD_DIR=$(ROOT)/build/wasm/texlive
 WEB2C_NATIVE_TOOLS_DIR=$(ROOT)/build/native/texlive/texk/web2c
@@ -24,7 +25,6 @@ PREFIX_native = $(ROOT)/build/native/prefix
 MAKE_wasm = emmake
 CMAKE_wasm = emcmake
 CONFIGURE_wasm = emconfigure
-EMROOT = $(dir $(shell which emcc))
 
 TOTAL_MEMORY = 536870912
 SKIP = all install:
@@ -162,7 +162,7 @@ build/%/expat/libexpat.a: source/expat.downloaded
 	   $(ROOT)/$(basename $<) 
 	$(MAKE_$*) make -C $(dir $@)
 
-build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
+build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
 	$(CONFIGURE_$*) $(ROOT)/$(basename $<)/configure \
 	   --cache-file=$(CACHE_$*_fontconfig)		 \
@@ -181,8 +181,8 @@ build/%/fontconfig/libfontconfig.a: source/fontconfig.patched build/%/expat/libe
 build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup: build/%/texlive.configured
 	# renaming duplicate check* 
 	# build/%/texlive/texk/bibtex-x/bibtexu.patcheddup:
-	$(MAKE_$*) make -C $(dir $(basename $@))  clean
-	$(MAKE_$*) make -C $(dir $(basename $@))  $(OPTS_$*_$(notdir $(basename $@)))
+	$(MAKE_$*) make -C $(dir $(basename $@)) clean
+	$(MAKE_$*) make -C $(dir $(basename $@)) $(OPTS_$*_$(notdir $(basename $@)))
 	touch $@
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o:
@@ -253,7 +253,7 @@ build/native/busytex:
 	cd build/native/texlive/texk/web2c/ && $(CC) -o $(ROOT)/$@ $(OBJ_XETEX) $(OBJ_XETEX_DEPS_native) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/native/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/native/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_native) $(ROOT)/busytex.c
 
 build/wasm/busytex.js: 
-	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ --pre-js $(ROOT)/build/wasm/texlive.js -g -O2 -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm) -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
+	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm) -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
 
 ################################################################################################################
 
@@ -276,9 +276,7 @@ native:
 	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
 	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
 	make build/native/expat/libexpat.a
-	make build/native/fontconfig/libfontconfig.a 
-	#make build/native/texlive/texk/bibtex-x/bibtexu 
-	#make build/native/texlive/texk/dvipdfm-x/xdvipdfmx 
+	make build/native/fontconfig/src/.libs/libfontconfig.a
 	# busy 
 	make build/native/texlive/texk/web2c/xetex
 	#make build/native/busytex
@@ -305,9 +303,8 @@ wasm:
 	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
 	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
 	make build/wasm/expat/libexpat.a
-	make build/wasm/fontconfig/libfontconfig.a 
-	make build/wasm/texlive/texk/bibtex-x/bibtexu 
-	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx 
+	make build/wasm/fontconfig/src/.libs/libfontconfig.a
+	#make build/wasm/texlive/texk/bibtex-x/bibtexu 
 	# busy
 	make build/wasm/texlive/texk/web2c/xetex-xetex0.o
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
@@ -319,13 +316,16 @@ clean_native:
 clean_format:
 	rm -rf build/format
 
+clean_dist:
+	rm -rf dist
+
 clean:
 	rm -rf build source
 
 dist:
 	mkdir -p $@
-	cp build/wasm/texlive.data build/wasm/texlive.js build/wasm/busytex.wasm build/wasm/busytex.js $@
+	cp build/wasm/texlive.data build/wasm/busytex.wasm build/wasm/busytex.js $@
 	cp -r build/texmf.cnf build/texlive build/fontconfig $@
 	#cp build/native/busytex $@
 
-.PHONY:	install all texlive tds native wasm clean clean_native clean_format
+.PHONY:	install all texlive tds native wasm clean clean_dist clean_native clean_format

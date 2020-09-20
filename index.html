@@ -13,7 +13,7 @@ Hello, world!
 <div><button style="width: 98%; height: 10%; font-size: x-large" onclick="compile()">Compile</button></div> 
 
 
-<script type="text/javascript" src="busytex.js"></script>
+<script type="text/javascript" src="dist/busytex.js"></script>
 <script>
 
 const bin_busytex = '/bin/busytex';
@@ -41,7 +41,7 @@ function NOCLEANUP_callMain(Module, args)
 	}
 	catch(e)
 	{
-		return e;
+		return e.status;
 	}
 	return 0;
 }
@@ -56,12 +56,11 @@ function main(Module)
 
     FS.chdir(home);
     FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
-    
-    console.log('Called', NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]));
-    console.log('Called', NOCLEANUP_callMain(Module, ['dvipdfmx', source_path.replace('.tex', '.xdv')]));
-    
-    //Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]);
-    //Module.callMain(['dvipdfmx', source_path.replace('.tex', '.xdv')]);
+
+    if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
+        return;
+    if(0 != NOCLEANUP_callMain(Module, ['dvipdfmx', source_path.replace('.tex', '.xdv')]))
+        return;
     
     const pdf = FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
     document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
@@ -71,6 +70,11 @@ async function compile()
 {
     const Module_busytex = 
     {
+        locateFile(remote_package_name)
+        {
+            return '/dist/' + remote_package_name
+        },
+        
         noInitialRun : true,
 
         thisProgram : bin_busytex,
