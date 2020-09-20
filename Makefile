@@ -66,13 +66,13 @@ OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIP
 # OBJ_XETEX_BINXETEX = xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_XETEX = synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o
 OBJ_XETEX_BINBUSY = xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o xetexdir/libxetex_a-XeTeXFontMgr_FC.o xetexdir/image/libxetex_a-pngimage.o xetexdir/image/libxetex_a-bmpimage.o xetexdir/image/libxetex_a-jpegimage.o
-
-OBJ_DVIPDF = $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/*.o
-
 OBJ_XETEX_DEPS_wasm = $(addprefix $(ROOT)/build/wasm/texlive/libs/, harfbuzz/libharfbuzz.a graphite2/libgraphite2.a teckit/libTECkit.a libpng/libpng.a freetype2/libfreetype.a pplib/libpplib.a zlib/libz.a icu/icu-build/lib/libicuuc.a icu/icu-build/lib/libicudata.a) libmd5.a lib/lib.a $(ROOT)/build/wasm/texlive/texk/kpathsea/.libs/libkpathsea.a $(ROOT)/build/wasm/fontconfig/src/.libs/libfontconfig.a $(ROOT)/build/wasm/expat/libexpat.a  
-OBJ_XETEX_DEPS_native = $(addprefix $(ROOT)/build/native/texlive/libs/, harfbuzz/libharfbuzz.a graphite2/libgraphite2.a teckit/libTECkit.a libpng/libpng.a freetype2/libfreetype.a pplib/libpplib.a zlib/libz.a icu/icu-build/lib/libicuuc.a icu/icu-build/lib/libicudata.a) libmd5.a lib/lib.a $(ROOT)/build/native/texlive/texk/kpathsea/.libs/libkpathsea.a $(ROOT)/build/native/fontconfig/src/.libs/libfontconfig.a $(ROOT)/build/native/expat/libexpat.a  
+
+OBJ_DVIPDF_wasm = $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/*.o
 OBJ_DVIPDF_DEPS_wasm = $(addprefix $(ROOT)/build/wasm/texlive/libs/, libpng/libpng.a zlib/libz.a libpaper/libpaper.a) $(ROOT)/build/wasm/texlive/texk/kpathsea/.libs/libkpathsea.a -lm -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/build/wasm/fontconfig  
+
 OBJ_DVIPDF_DEPS_native = $(addprefix $(ROOT)/build/native/texlive/libs/, libpng/libpng.a zlib/libz.a libpaper/libpaper.a) $(ROOT)/build/native/texlive/texk/kpathsea/.libs/libkpathsea.a -lm -I$(ROOT)/build/native/texlive/libs/icu/include -I$(ROOT)/build/native/fontconfig  
+OBJ_XETEX_DEPS_native = $(addprefix $(ROOT)/build/native/texlive/libs/, harfbuzz/libharfbuzz.a graphite2/libgraphite2.a teckit/libTECkit.a libpng/libpng.a freetype2/libfreetype.a pplib/libpplib.a zlib/libz.a icu/icu-build/lib/libicuuc.a icu/icu-build/lib/libicudata.a) libmd5.a lib/lib.a $(ROOT)/build/native/texlive/texk/kpathsea/.libs/libkpathsea.a $(ROOT)/build/native/fontconfig/src/.libs/libfontconfig.a $(ROOT)/build/native/expat/libexpat.a  
 
 all:
 	make texlive
@@ -252,8 +252,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js: 
-	#cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm)  $(ROOT)/busytex.c
-	cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(OBJ_DVIPDF)  $(OBJ_DVIPDF_DEPS_wasm) $(ROOT)/busytex.c
+	cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(OBJ_DVIPDF_wasm)  $(OBJ_DVIPDF_DEPS_wasm) $(ROOT)/busytex.c
 
 ################################################################################################################
 
