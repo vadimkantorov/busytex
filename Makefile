@@ -34,9 +34,7 @@ CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
-#-Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=get_unsigned_pair
-
-CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png
+CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair
 CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex'
 
 CFLAGS_wasm_bibtexu = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
@@ -65,10 +63,9 @@ OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIP
 
 # all object files in libxetex.a except libxetex_a-mfileio.o libxetex_a-numbers.o
 # OBJ_XETEX_BINXETEX = xetexdir/xetex-xetexextra.o libxetex.a
-OBJ_XETEX = -lm libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o
-OBJ_XETEX_LIBXETEX = xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o xetexdir/libxetex_a-XeTeXFontMgr_FC.o xetexdir/image/libxetex_a-pngimage.o xetexdir/image/libxetex_a-bmpimage.o xetexdir/image/libxetex_a-jpegimage.o
+OBJ_XETEX = libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_DVIPDF = texlive/texk/dvipdfm-x/*.o
-OBJ_DEPS =  texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
+OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
 INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 
 all:
@@ -182,7 +179,7 @@ build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup: build/%/texlive.configured
 	# build/%/texlive/texk/bibtex-x/bibtexu.patcheddup:
 	$(MAKE_$*) make -C $(dir $(basename $@)) clean
 	$(MAKE_$*) make -C $(dir $(basename $@)) $(OPTS_$*_$(notdir $(basename $@)))
-	touch $@
+	#touch $@
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o:
 	# copying generated C files from native version, since string offsets are off
@@ -249,7 +246,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js:
-	cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_LIBXETEX) $(addprefix $(ROOT)/build/wasm/, $(OBJ_DVIPDF) $(OBJ_DEPS)) $(addprefix -I$(ROOT)/build/wasm/, $(INCLUDE_DEPS)) $(ROOT)/busytex.c
+	cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(OBJ_XETEX) $(addprefix $(ROOT)/build/wasm/, $(OBJ_DVIPDF) $(OBJ_DEPS)) $(addprefix -I$(ROOT)/build/wasm/, $(INCLUDE_DEPS)) $(ROOT)/busytex.c
 
 ################################################################################################################
 
@@ -287,22 +284,22 @@ tds:
 	make build/wasm/texlive.data
 
 wasm:
-	make build/wasm/texlive.configured
-	make build/wasm/texlive/libs/libpng/libpng.a 
-	make build/wasm/texlive/libs/libpaper/libpaper.a 
-	make build/wasm/texlive/libs/zlib/libz.a 
-	make build/wasm/texlive/libs/teckit/libTECkit.a 
-	make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
-	make build/wasm/texlive/libs/graphite2/libgraphite2.a 
-	make build/wasm/texlive/libs/pplib/libpplib.a 
-	make build/wasm/texlive/libs/freetype2/libfreetype.a 
-	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
-	make build/wasm/expat/libexpat.a
-	make build/wasm/fontconfig/src/.libs/libfontconfig.a
-	#make build/wasm/texlive/texk/bibtex-x/bibtexu 
-	# busy
-	make build/wasm/texlive/texk/web2c/xetex-xetex0.o
+	#make build/wasm/texlive.configured
+	#make build/wasm/texlive/libs/libpng/libpng.a 
+	#make build/wasm/texlive/libs/libpaper/libpaper.a 
+	#make build/wasm/texlive/libs/zlib/libz.a 
+	#make build/wasm/texlive/libs/teckit/libTECkit.a 
+	#make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
+	#make build/wasm/texlive/libs/graphite2/libgraphite2.a 
+	#make build/wasm/texlive/libs/pplib/libpplib.a 
+	#make build/wasm/texlive/libs/freetype2/libfreetype.a 
+	#make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	#make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
+	#make build/wasm/expat/libexpat.a
+	#make build/wasm/fontconfig/src/.libs/libfontconfig.a
+	##make build/wasm/texlive/texk/bibtex-x/bibtexu 
+	## busy
+	#make build/wasm/texlive/texk/web2c/xetex-xetex0.o
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
 	make build/wasm/busytex.js
 
