@@ -34,7 +34,8 @@ CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
-CFLAGS_XDVIPDFMX = -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx'
+
+CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png
 CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex'
 
 CFLAGS_wasm_bibtexu = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
@@ -61,6 +62,7 @@ OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc $(CFLAGS_XETEX)" CXX="$(CCSKIP_w
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX)" CXX="em++ $(CFLAGS_XDVIPDFMX)"
 OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIPDFMX)"
 
+# all object files in libxetex.a except libxetex_a-mfileio.o libxetex_a-numbers.o
 OBJ_XETEX = synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o
 OBJ_XETEX_BINXETEX = xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_XETEX_BINBUSY = xetexdir/xetex-xetexextra.o xetexdir/libxetex_a-XeTeXFontInst.o xetexdir/libxetex_a-XeTeXFontMgr.o xetexdir/libxetex_a-XeTeXLayoutInterface.o xetexdir/libxetex_a-XeTeXOTMath.o xetexdir/libxetex_a-XeTeX_ext.o xetexdir/libxetex_a-XeTeX_pic.o xetexdir/libxetex_a-trans.o xetexdir/libxetex_a-hz.o xetexdir/libxetex_a-pdfimage.o xetexdir/libxetex_a-XeTeXFontMgr_FC.o 
@@ -191,7 +193,7 @@ build/wasm/texlive/texk/web2c/xetex-xetex0.o:
 	$(MAKE_wasm) make -C $(dir $@) clean
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
-	$(MAKE_wasm) make -C $(dir $@) xetex synctexdir/xetex-synctex.o $(OPTS_wasm_xetex)
+	$(MAKE_wasm) make -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
 
 build/native/texlive/texk/web2c/xetex: 
 	$(MAKE_native) make -C $(dir $@) xetex 
@@ -223,15 +225,15 @@ build/texlive/profile.input:
 	echo TEXMFVAR $(ROOT)/$(dir $@)/home/texmf-var >> $@
 
 build/texlive/texmf-dist: build/install-tl/install-tl build/texlive/profile.input
-	cd build/texlive && \
-	$(ROOT)/build/install-tl/install-tl -profile profile.input && \
-	rm -rf bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c
-	#TEXLIVE_INSTALL_PREFIX=$(dir $@) $< -profile profile.input 
-	#rm -rf $(dir $@)/bin $(dir $@)/readme* $(dir $@)/tlpkg $(dir $@)/install* $(dir $@)/*.html $(dir $@)/texmf-dist/doc $(dir $@)/texmf-var/web2c
+	# https://www.tug.org/texlive/doc/install-tl.html
+	mkdir -p $(dir $@)
+	TEXLIVE_INSTALL_NO_RESUME=1 $< -profile build/texlive/profile.input
+	rm -rf $(addprefix $(dir $@)/, bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c)
 
 build/format/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive/texmf-dist 
-	mkdir -p $(ROOT)/build/format
+	mkdir -p build/format
 	wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
+	rm build/format/*
 	unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
 	cd $(dir $@) && \
 	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/$< -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex unpack.ins && \
@@ -248,9 +250,6 @@ build/texmf.cnf: build/texlive/texmf-dist
 	cp $</web2c/texmf.cnf $@
 
 ################################################################################################################
-
-build/native/busytex:
-	cd build/native/texlive/texk/web2c/ && $(CC) -o $(ROOT)/$@ $(OBJ_XETEX) $(OBJ_XETEX_DEPS_native) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/native/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/native/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_native) $(ROOT)/busytex.c
 
 build/wasm/busytex.js: 
 	cd build/wasm/texlive/texk/web2c/ && emcc -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' $(OBJ_XETEX) $(OBJ_XETEX_DEPS_wasm) $(OBJ_XETEX_BINBUSY) $(addprefix $(ROOT)/build/wasm/texlive/, $(OBJ_XETEX_DEPS_BINBUSY)) $(addprefix $(ROOT)/build/wasm/texlive/texk/dvipdfm-x/, $(OBJ_DVIPDF)) $(OBJ_DVIPDF_DEPS_wasm) -s MODULARIZE=1 -s EXPORT_NAME=busytex $(ROOT)/busytex.c
@@ -310,6 +309,9 @@ wasm:
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
 	make build/wasm/busytex.js
 
+clean_tds:
+	rm -rf build/texlive
+
 clean_native:
 	rm -rf build/native
 
@@ -327,4 +329,4 @@ dist:
 	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
-.PHONY:	install all texlive tds native wasm clean clean_dist clean_native clean_format
+.PHONY:	install all texlive tds native wasm clean clean_tds clean_dist clean_native clean_format
