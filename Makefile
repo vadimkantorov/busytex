@@ -25,6 +25,8 @@ PREFIX_native = $(ROOT)/build/native/prefix
 MAKE_wasm = emmake
 CMAKE_wasm = emcmake
 CONFIGURE_wasm = emconfigure
+AR_wasm = emar
+AR_native = $(AR)
 
 TOTAL_MEMORY = 536870912
 SKIP = all install:
@@ -61,10 +63,8 @@ OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc $(CFLAGS_XETEX)" CXX="$(CCSKIP_w
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX)" CXX="em++ $(CFLAGS_XDVIPDFMX)"
 OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIPDFMX)"
 
-# all object files in libxetex.a except libxetex_a-mfileio.o libxetex_a-numbers.o
-# OBJ_XETEX_BINXETEX = xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_XETEX = libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o libxetex.a
-OBJ_DVIPDF = texlive/texk/dvipdfm-x/*.o
+OBJ_DVIPDF = texlive/texk/dvipdfm-x/xdvipdfmx.a
 OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
 INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 
@@ -174,11 +174,10 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 ################################################################################################################
 
 
-build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup: build/%/texlive.configured
-	# renaming duplicate check* 
-	# build/%/texlive/texk/bibtex-x/bibtexu.patcheddup:
-	$(MAKE_$*) make -C $(dir $(basename $@)) clean
-	$(MAKE_$*) make -C $(dir $(basename $@)) $(OPTS_$*_$(notdir $(basename $@)))
+build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup build/%/texlive/texk/bibtex-x/bibtexu.patcheddup: build/%/texlive.configured
+	$(MAKE_$*) make -C $(dir $@) clean
+	$(MAKE_$*) make -C $(dir $@) $(OPTS_$*_$(notdir $(basename $@)))
+	$(AR_$*) -crs $(basename $@).a $(dir $@)/*.o
 	#touch $@
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o:
@@ -246,7 +245,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js:
-	cd build/wasm/texlive/texk/web2c/ && emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $(ROOT)/$@ -g -O2 --pre-js $(ROOT)/build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(OBJ_XETEX) $(addprefix $(ROOT)/build/wasm/, $(OBJ_DVIPDF) $(OBJ_DEPS)) $(addprefix -I$(ROOT)/build/wasm/, $(INCLUDE_DEPS)) $(ROOT)/busytex.c
+	emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $@ -g -O2 --pre-js build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
@@ -300,7 +299,7 @@ wasm:
 	##make build/wasm/texlive/texk/bibtex-x/bibtexu 
 	## busy
 	#make build/wasm/texlive/texk/web2c/xetex-xetex0.o
-	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
+	#make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
 	make build/wasm/busytex.js
 
 clean_tds:
