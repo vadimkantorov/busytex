@@ -57,8 +57,23 @@ function main(Module)
     FS.chdir(home);
     FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
 
+    const run_bibtex = false;
+
     if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
         return;
+    
+    if(run_bibtex)
+    {
+        if(0 != NOCLEANUP_callMain(Module, ['bibtexu', source_path]))
+            return;
+
+        if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
+            return;
+        if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
+            return;
+    }
+    
+    
     if(0 != NOCLEANUP_callMain(Module, ['dvipdfmx', source_path.replace('.tex', '.xdv')]))
         return;
     
