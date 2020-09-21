@@ -363,3 +363,8 @@ dist:
 	mkdir -p $@
 	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
+
+.PHONY: dist/emscriptenfs.js
+dist/emscriptenfs.js:
+	mkdir -p $(dir $@)
+	emcc emscriptenfs.c -o $@ -s MODULARIZE=1 -s EXPORT_NAME=emscriptenfs -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS='["FS"]' -s INVOKE_RUN=0 
