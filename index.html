@@ -1,16 +1,29 @@
 <html><body style="width: 100%; height: 100%; overflow: hidden">
 
-<div><iframe style="width: 98%; height:50%" id="preview"></iframe></div>
+<div><iframe style="width: 98%; height:30%" id="preview"></iframe></div>
 
-<div><textarea style="width: 98%; height: 15%" id="source">
-\documentclass{article}
+<div><textarea style="width: 98%; height: 25%" id="tex">
+\documentclass[11pt]{article}
 \begin{document}
-Hello, world!
+\title{My Article}
+\author{Nobody Jr.}
+\date{Today}
+\maketitle
+Blablabla said Nobody ~\cite{Nobody06}.
+\bibliography{example}{}
+\bibliographystyle{plain}
 \end{document}
+</textarea></div>
+<div><textarea style="width: 98%; height: 15%" id="bib">
+@misc{Nobody06,
+   author = "Nobody Jr",
+   title = "My Article",
+   year = "2006" 
+}
 </textarea></div>
 
 <div><textarea style="width: 98%; height: 25%" id="status"></textarea></div>
-<div><button style="width: 98%; height: 10%; font-size: x-large" onclick="compile()">Compile</button></div> 
+<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="compile()">Compile</button></div> 
 
 
 <script type="text/javascript" src="dist/busytex.js"></script>
@@ -24,11 +37,14 @@ const dir_fontconfig = '/fontconfig';
 const conf_fontconfig = 'texlive.conf';
 
 const home = '/home/web_user';
-const source_path = home + '/source.tex';
+const tex_path = home + '/example.tex';
+const bib_path = home + '/example.bib';
+const aux_path = home + '/example.aux';
 
 function NOCLEANUP_callMain(Module, args)
 {
-	const entryFunction = Module['_main'];
+	Module.setPrefix(args[0]);
+    const entryFunction = Module['_main'];
 	const argc = args.length+1;
 	const argv = Module.stackAlloc((argc + 1) * 4);
 	Module.HEAP32[argv >> 2] = Module.allocateUTF8OnStack(Module.thisProgram);
@@ -52,34 +68,30 @@ function main(Module)
     const FS = Module.FS;
 	const ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
     
-    const source = document.getElementById('source').value;
+    const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
 
     FS.chdir(home);
-    FS.writeFile(source_path, source, {encoding: 'utf-8'}); 
+    FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
+    FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
 
-    const run_bibtex = false;
+    let exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
+    
+    exit_code = NOCLEANUP_callMain(Module, ['bibtexu', '--debug=search','--csfile', '/bibtex/88591lat.csf', 'example']);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
 
-    if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
-        return;
+    exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
-    if(run_bibtex)
-    {
-        if(0 != NOCLEANUP_callMain(Module, ['bibtexu', source_path]))
-            return;
-
-        if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
-            return;
-        if(0 != NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, source_path]))
-            return;
-    }
+    exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
+    exit_code = NOCLEANUP_callMain(Module, ['dvipdfmx', tex_path.replace('.tex', '.xdv')]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
-    if(0 != NOCLEANUP_callMain(Module, ['dvipdfmx', source_path.replace('.tex', '.xdv')]))
-        return;
-    
-    const pdf = FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
+    const pdf = FS.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
     document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
-};
+}
 
 async function compile()
 {
@@ -104,12 +116,17 @@ async function compile()
         
         print(text) 
         {
-            Module_busytex.setStatus('stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+            Module_busytex.setStatus(Module_busytex.prefix + ' | stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
         },
 
         printErr(text)
         {
-            Module_busytex.setStatus('stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+            Module_busytex.setStatus(Module_busytex.prefix + ' | stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+
+        setPrefix(text)
+        {
+            this.prefix = text;
         },
         
         setStatus(text)
@@ -126,6 +143,7 @@ async function compile()
         },
         
         totalDependencies: 0,
+        prefix : ""
     };
 
     main(await busytex(Module_busytex));

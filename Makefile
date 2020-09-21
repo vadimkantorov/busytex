@@ -129,7 +129,7 @@ build/%/texlive.configured: source/texlive.patched
 	  --with-banner-add="_BUSY$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"		\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)" &&   \
-	$(MAKE_$*) make  
+	$(MAKE_$*) make 
 	touch $@
 
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
@@ -176,11 +176,16 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 
 ################################################################################################################
 
+build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtexu: build/native/texlive.configured
+	$(MAKE_native) make -C $(dir $@) clean
+	$(MAKE_native) make -C $(dir $@)
+	
 
-build/%/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup build/%/texlive/texk/bibtex-x/bibtexu.patcheddup: build/%/texlive.configured
-	$(MAKE_$*) make -C $(dir $@) clean
-	$(MAKE_$*) make -C $(dir $@) $(OPTS_$*_$(notdir $(basename $@)))
-	$(AR_$*) -crs $(basename $@).a $(dir $@)/*.o
+build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup build/wasm/texlive/texk/bibtex-x/bibtexu.patcheddup: build/wasm/texlive.configured
+	#TODO: set CSFINPUT=/bibtex
+	$(MAKE_wasm) make -C $(dir $@) clean
+	$(MAKE_wasm) make -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
+	$(AR_wasm) -crs $(basename $@).a $(dir $@)/*.o
 	#touch $@
 
 build/wasm/texlive/texk/web2c/xetex-xetex0.o:
@@ -240,7 +245,16 @@ build/wasm/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/f
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
-	python3 $(EMROOT)/tools/file_packager.py $@ --lz4 --use-preload-cache --preload "build/empty@/bin/busytex" --preload "build/fontconfig/texlive.conf@/fontconfig/texlive.conf" --preload "build/texmf.cnf@/texmf.cnf" --preload build/texlive@/texlive --preload "$<@/latex.fmt" --js-output=build/wasm/texlive.js
+	# --use-preload-cache
+	python3 $(EMROOT)/tools/file_packager.py $@ --js-output=build/wasm/texlive.js --lz4 \
+		--preload build/empty@/bin/busytex \
+		--preload build/fontconfig/texlive.conf@/fontconfig/texlive.conf \
+		--preload build/texmf.cnf@/texmf.cnf \
+		--preload build/texlive@/texlive \
+		--preload source/texlive/texk/bibtex-x/csf@/bibtex \
+		--preload build/empty@/hello \
+		--preload $<@/latex.fmt
+		
 
 build/texmf.cnf: build/texlive/texmf-dist
 	cp $</web2c/texmf.cnf $@
@@ -248,7 +262,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js:
-	emcc -s MODULARIZE=1 -s EXPORT_NAME=busytex -o $@ -g -O2 --pre-js build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+	emcc -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s ASSERTIONS=1 -s EXPORT_NAME=busytex -o $@ -g -O2 --pre-js build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
@@ -257,23 +271,25 @@ texlive:
 	make source/texlive.patched
 
 native: 
-	make build/native/texlive.configured
-	make build/native/texlive/libs/libpng/libpng.a 
-	make build/native/texlive/libs/libpaper/libpaper.a 
-	make build/native/texlive/libs/zlib/libz.a 
-	make build/native/texlive/libs/teckit/libTECkit.a 
-	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	make build/native/texlive/libs/graphite2/libgraphite2.a 
-	make build/native/texlive/libs/pplib/libpplib.a 
-	make build/native/texlive/libs/freetype2/libfreetype.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	make build/native/expat/libexpat.a
-	make build/native/fontconfig/src/.libs/libfontconfig.a
+	#make build/native/texlive.configured
+	#make build/native/texlive/libs/libpng/libpng.a 
+	#make build/native/texlive/libs/libpaper/libpaper.a 
+	#make build/native/texlive/libs/zlib/libz.a 
+	#make build/native/texlive/libs/teckit/libTECkit.a 
+	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	#make build/native/texlive/libs/graphite2/libgraphite2.a 
+	#make build/native/texlive/libs/pplib/libpplib.a 
+	#make build/native/texlive/libs/freetype2/libfreetype.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	#make build/native/expat/libexpat.a
+	#make build/native/fontconfig/src/.libs/libfontconfig.a
 	# busy 
-	make build/native/texlive/texk/web2c/xetex
+	#make build/native/texlive/texk/web2c/xetex
+	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx
+	make build/native/texlive/texk/bibtex-x/bibtexu
 	#make build/native/busytex
 
 tds:
@@ -325,4 +341,4 @@ dist:
 	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
-.PHONY:	install all texlive tds native wasm clean clean_tds clean_dist clean_native clean_format
+.PHONY:	dist install all texlive tds native wasm clean clean_tds clean_dist clean_native clean_format
