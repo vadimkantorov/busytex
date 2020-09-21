@@ -540,9 +540,8 @@
         })
 
         Terminal.applyAddon(fit)
-        let xterm = new Terminal()
-        xterm.open(document.getElementById('terminal'))
-        window.terminal = xterm;
+        window.terminal = new Terminal()
+        window.terminal.open(document.getElementById('terminal'))
         window.terminal.on('key', onkey);
         window.terminal.prompt = () => window.terminal.write('\x1B[1;3;31memscripten\x1B[0m:' + new Shell(typeof(FS) == 'undefined' ? null : FS, window.terminal).pwd(true) + '$ ');
         window.terminal.println = line => window.terminal.write((line || '') + '\r\n');
@@ -574,11 +573,11 @@
         console.log('Page rendered')
 
         window.editor.layout()
-        xterm.fit()
+        window.terminal.fit()
 
         window.onresize = () => {
           window.editor.layout()
-          xterm.fit()
+          window.terminal.fit()
 
           console.log('resized')
         }

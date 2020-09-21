@@ -367,4 +367,4 @@ dist:
 .PHONY: dist/emscriptenfs.js
 dist/emscriptenfs.js:
 	mkdir -p $(dir $@)
-	emcc emscriptenfs.c -o $@ -s MODULARIZE=1 -s EXPORT_NAME=emscriptenfs -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS='["FS"]' -s INVOKE_RUN=0 
+	emcc emscriptenfs.c -o $@  -s WASM=1 -s SINGLE_FILE=1 -s MODULARIZE=1 -s EXPORT_NAME=emscriptenfs -s FORCE_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS='["FS"]' -s INVOKE_RUN=0 
