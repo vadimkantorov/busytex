@@ -201,7 +201,6 @@ build/wasm/texlive/texk/dvipdfm-x/bibtex8.a: build/wasm/texlive.configured
 
 build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	# copying generated C files from native version, since string offsets are off
-	# many more object files are produced
 	$(MAKE_wasm) -C $(dir $@) clean
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
@@ -280,26 +279,25 @@ texlive:
 
 .PHONY: native
 native: 
-	#make build/native/texlive.configured
-	#make build/native/texlive/libs/libpng/libpng.a 
-	#make build/native/texlive/libs/libpaper/libpaper.a 
-	#make build/native/texlive/libs/zlib/libz.a 
-	#make build/native/texlive/libs/teckit/libTECkit.a 
-	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	#make build/native/texlive/libs/graphite2/libgraphite2.a 
-	#make build/native/texlive/libs/pplib/libpplib.a 
-	#make build/native/texlive/libs/freetype2/libfreetype.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	#make build/native/expat/libexpat.a
-	#make build/native/fontconfig/src/.libs/libfontconfig.a
-	# busy 
-	#make build/native/texlive/texk/web2c/xetex
-	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx
+	make build/native/texlive.configured
+	make build/native/texlive/libs/libpng/libpng.a 
+	make build/native/texlive/libs/libpaper/libpaper.a 
+	make build/native/texlive/libs/zlib/libz.a 
+	make build/native/texlive/libs/teckit/libTECkit.a 
+	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/native/texlive/libs/graphite2/libgraphite2.a 
+	make build/native/texlive/libs/pplib/libpplib.a 
+	make build/native/texlive/libs/freetype2/libfreetype.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	make build/native/expat/libexpat.a
+	make build/native/fontconfig/src/.libs/libfontconfig.a
+	# regular binaries 
 	make build/native/texlive/texk/bibtex-x/bibtex8
-	#make build/native/busytex
+	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx
+	make build/native/texlive/texk/web2c/xetex
 
 .PHONY: tds
 tds:
@@ -313,23 +311,23 @@ tds:
 
 .PHONY: wasm
 wasm:
-	#make build/wasm/texlive.configured
-	#make build/wasm/texlive/libs/libpng/libpng.a 
-	#make build/wasm/texlive/libs/libpaper/libpaper.a 
-	#make build/wasm/texlive/libs/zlib/libz.a 
-	#make build/wasm/texlive/libs/teckit/libTECkit.a 
-	#make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
-	#make build/wasm/texlive/libs/graphite2/libgraphite2.a 
-	#make build/wasm/texlive/libs/pplib/libpplib.a 
-	#make build/wasm/texlive/libs/freetype2/libfreetype.a 
-	#make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	#make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
-	#make build/wasm/expat/libexpat.a
-	#make build/wasm/fontconfig/src/.libs/libfontconfig.a
-	## busy
-	#make build/wasm/texlive/texk/dvipdfm-x/bibtex8.a
-	#make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
-	#make build/wasm/texlive/texk/web2c/libxetex.a
+	make build/wasm/texlive.configured
+	make build/wasm/texlive/libs/libpng/libpng.a 
+	make build/wasm/texlive/libs/libpaper/libpaper.a 
+	make build/wasm/texlive/libs/zlib/libz.a 
+	make build/wasm/texlive/libs/teckit/libTECkit.a 
+	make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/wasm/texlive/libs/graphite2/libgraphite2.a 
+	make build/wasm/texlive/libs/pplib/libpplib.a 
+	make build/wasm/texlive/libs/freetype2/libfreetype.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/wasm/expat/libexpat.a
+	make build/wasm/fontconfig/src/.libs/libfontconfig.a
+	# busy binaries
+	make build/wasm/texlive/texk/dvipdfm-x/bibtex8.a
+	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
+	make build/wasm/texlive/texk/web2c/libxetex.a
 	make build/wasm/busytex.js
 
 .PHONY: example
