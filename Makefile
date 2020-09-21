@@ -86,7 +86,7 @@ source/texlive.downloaded source/expat.downloaded source/fontconfig.downloaded:
 	touch $@
 
 source/fontconfig.patched: source/fontconfig.downloaded
-	patch -d $(basename $<) -Np1 -i $(ROOT)/0002-fix-fcstats-emscripten.patch
+	patch -d $(basename $<) -Np1 -i $(ROOT)/fontconfig-fcstats-emscripten.patch
 	echo "$(SKIP)" > source/fontconfig/test/Makefile.in 
 	touch $@
 
