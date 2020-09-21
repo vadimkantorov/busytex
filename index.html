@@ -78,7 +78,7 @@ function main(Module)
     let exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
     Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
-    //exit_code = NOCLEANUP_callMain(Module, ['bibtexu', '--debug=search','--csfile', '/bibtex/88591lat.csf', 'example']);
+    //exit_code = NOCLEANUP_callMain(Module, ['bibtex8', '--debug=search','--csfile', '/bibtex/88591lat.csf', 'example']);
     //Module.print(`\nEXIT CODE: ${exit_code}\n`);
 
     exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
@@ -87,7 +87,7 @@ function main(Module)
     //exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
     //Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
-    exit_code = NOCLEANUP_callMain(Module, ['dvipdfmx', tex_path.replace('.tex', '.xdv')]);
+    exit_code = NOCLEANUP_callMain(Module, ['xdvipdfmx', tex_path.replace('.tex', '.xdv')]);
     Module.print(`\nEXIT CODE: ${exit_code}\n`);
     
     const pdf = FS.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});

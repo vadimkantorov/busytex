@@ -38,8 +38,8 @@ CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
-CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair
-CFLAGS_BIBTEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_bibtex' -Dinitialize=bibtex_initialize -Deoln=bibtex_eoln -Dlast=bibtex_last -Dhistory=bibtex_history -Dbad=bibtex_bad -Dxchr=bibtex_xchr -Dbuffer=bibtex_buffer -Dclose_file=bibtex_close_file -Dusage=bibtex_usage
+CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xdvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair
+CFLAGS_BIBTEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_bibtex8' -Dinitialize=bibtex_initialize -Deoln=bibtex_eoln -Dlast=bibtex_last -Dhistory=bibtex_history -Dbad=bibtex_bad -Dxchr=bibtex_xchr -Dbuffer=bibtex_buffer -Dclose_file=bibtex_close_file -Dusage=bibtex_usage
 CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex'
 
 CFLAGS_wasm_bibtex = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
@@ -139,7 +139,7 @@ build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.config
 	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
 	$(MAKE_wasm) $(OPTS_wasm_icu_make) && \
 	echo "$(SKIP)" > icu-build/test/Makefile && \
-	$(MAKE_wasm) -C icu-build  $(OPTS_wasm_icu_make) 
+	$(MAKE_wasm) -C icu-build $(OPTS_wasm_icu_make) 
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive.configured
 	$(MAKE_native) -C build/native/texlive/libs/icu 
@@ -181,7 +181,10 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtex8: build/native/texlive.configured
 	$(MAKE_native) -C $(dir $@) clean
 	$(MAKE_native) -C $(dir $@)
-	
+
+build/native/texlive/texk/web2c/xetex: 
+	$(MAKE_native) -C $(dir $@) xetex 
+
 build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
 	$(MAKE_wasm) -C $(dir $@) clean
 	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
@@ -200,9 +203,6 @@ build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	$(MAKE_wasm) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
-
-build/native/texlive/texk/web2c/xetex: 
-	$(MAKE_native) -C $(dir $@) xetex 
 
 
 ################################################################################################################
