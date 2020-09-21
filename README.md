@@ -30,7 +30,7 @@ make tds
 make wasm
 
 # copies binaries and TexLive TDS into ./dist
-# make dist
+make dist
 
 # remove build and source completely
 make clean
