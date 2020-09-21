@@ -1,156 +1,613 @@
-<html><body style="width: 100%; height: 100%; overflow: hidden">
-
-<div><iframe style="width: 98%; height:30%" id="preview"></iframe></div>
-
-<div><textarea style="width: 98%; height: 25%" id="tex">
-\documentclass[11pt]{article}
-\begin{document}
-\title{My Article}
-\author{Nobody Jr.}
-\date{Today}
-\maketitle
-Blablabla said Nobody ~\cite{Nobody06}.
-\bibliography{example}{}
-\bibliographystyle{plain}
-\end{document}
-</textarea></div>
-<div><textarea style="width: 98%; height: 15%" id="bib">
-@misc{Nobody06,
-   author = "Nobody Jr",
-   title = "My Article",
-   year = "2006" 
-}
-</textarea></div>
-
-<div><textarea style="width: 98%; height: 25%" id="status"></textarea></div>
-<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="compile()">Compile</button></div> 
-
-
-<script type="text/javascript" src="dist/busytex.js"></script>
-<script>
-
-const bin_busytex = '/bin/busytex';
-const fmt_latex = '/latex.fmt';
-const dir_texmfdist = '/texlive/texmf-dist:';
-const cnf_texlive = '/texmf.cnf';
-const dir_fontconfig = '/fontconfig';
-const conf_fontconfig = 'texlive.conf';
-
-const home = '/home/web_user';
-const tex_path = home + '/example.tex';
-const bib_path = home + '/example.bib';
-const aux_path = home + '/example.aux';
-
-function NOCLEANUP_callMain(Module, args)
-{
-	Module.setPrefix(args[0]);
-    const entryFunction = Module['_main'];
-	const argc = args.length+1;
-	const argv = Module.stackAlloc((argc + 1) * 4);
-	Module.HEAP32[argv >> 2] = Module.allocateUTF8OnStack(Module.thisProgram);
-	for (let i = 1; i < argc; i++) 
-		Module.HEAP32[(argv >> 2) + i] = Module.allocateUTF8OnStack(args[i - 1]);
-	Module.HEAP32[(argv >> 2) + argc] = 0;
-	try
-	{
-		entryFunction(argc, argv);
-	}
-	catch(e)
-	{
-		console.log('Caught', e);
-        return e.status;
-	}
-	return 0;
-}
+<!doctype html>
+<html>
+	<head>
+		<script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+		<script src="https://mozilla.github.io/pdf.js/build/pdf.worker.js"></script>
+		
+		<link rel="stylesheet" href="https://unpkg.com/xterm@3.8.0/dist/xterm.css" />
+		<script src="https://unpkg.com/xterm@3.8.0/dist/xterm.js"></script>
+		<script src="https://unpkg.com/xterm@3.8.0/dist/addons/fit/fit.js"></script>
+		
+		<script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+		<style>
+            html, body{
+                height: 100%;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #editor
+            {
+                height:50%;
+                width: 50%;
+                float:left;
+            }
+            #viewer
+            {
+                height:50%;
+                width: 50%;
+                float:right;
+            }
+            #terminal {
+                height:30%;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+            .xterm-viewport {
+                overflow-y: hidden !important
+            }
+            #status {
+                width: 100%;
+                height: 20%;
+                margin: 0;
+                padding: 0;
+                background-color: gray;
+                position: fixed;
+                bottom: 0; 
+                /*overflow-y: hidden !important*/
+            }
+            /*#pdfcanvas{ width:100%; height: 100%}*/
+            #fileupload {
+                display:none
+            }
+		</style>
 
 
-function main(Module)
-{
-    const FS = Module.FS;
-	const ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
-    
-    const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
+	</head>
+	<body>
+		<div id="editor"></div>
+		<div id="viewer"><img hidden id="imgcanvas"></img><canvas id="pdfcanvas"></canvas></div>
+		<div id="terminal"></div>
+		<textarea id="status" class="emscripten"></textarea>
+        <input type="file" id="fileupload" onchange="load_file()">
+		<script>
+		function delay(seconds)
+		{
+			return new Promise(resolve => setTimeout(resolve, seconds * 1000));
+		}
 
-    FS.chdir(home);
-    FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
-    FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
+		function base64_encode_utf8(str)
+		{
+			return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {return String.fromCharCode(parseInt(p1, 16)) }));
+		}
 
-    let exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
-    Module.print(`\nEXIT CODE: ${exit_code}\n`);
-    
-    //exit_code = NOCLEANUP_callMain(Module, ['bibtex8', '--debug=search','--csfile', '/bibtex/88591lat.csf', 'example']);
-    //Module.print(`\nEXIT CODE: ${exit_code}\n`);
+		function network_error(resp)
+		{
+			return new Error(`${resp.status}: ${resp.statusText}`);
+		}
 
-    exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
-    Module.print(`\nEXIT CODE: ${exit_code}\n`);
-    
-    //exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
-    //Module.print(`\nEXIT CODE: ${exit_code}\n`);
-    
-    exit_code = NOCLEANUP_callMain(Module, ['xdvipdfmx', tex_path.replace('.tex', '.xdv')]);
-    Module.print(`\nEXIT CODE: ${exit_code}\n`);
-    
-    const pdf = FS.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
-    document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
-}
+		class Guthub
+		{
+			constructor(auth_token, println)
+			{
+				this.retry_delay_seconds = 2;
+				this.auth_token = auth_token;
+				this.println = println || (line => null);
+			}
 
-async function compile()
-{
-    const Module_busytex = 
-    {
-        locateFile(remote_package_name)
+			github_api_request(https_path, relative_url, method, body)
+			{
+				const api = https_path.replace('github.com', 'api.github.com/repos');
+				return fetch(api + relative_url, Object.assign({method : method || 'get', headers : Object.assign({Authorization : 'Basic ' + btoa(this.auth_token)}, body != null ? {'Content-Type' : 'application/json'} : {})}, body != null ? {body : JSON.stringify(body)} : {}));
+			}
+
+			read_https_path()
+			{
+				return FS.readFile('.git/config', {encoding : 'utf8'}).split('\n')[1].split(' ')[2];
+			}
+
+			read_githubcontents()
+			{
+				const path = '.git/githubapicontents.json';
+				return FS.analyzePath(path).exists ? JSON.parse(FS.readFile(path, {encoding : 'utf8'})) : [];
+			}
+			
+			async clone(https_path, repo_path)
+			{
+				this.println(`Cloning into '${repo_path}'...`);
+				const resp = await this.github_api_request(https_path, '/contents');
+				const repo = await resp.json();
+				this.println(`remote: Enumerating objects: ${repo.length}, done.`);
+
+				FS.mkdir(repo_path);
+				FS.mkdir(repo_path + '/.git');
+				FS.writeFile(repo_path + '/.git/config', '[remote "origin"]\nurl = ' + https_path);
+				FS.writeFile(repo_path + '/.git/githubapicontents.json', JSON.stringify(repo));
+                
+                while(repo.length > 0)
+                {
+                    const file = repo.pop();
+					if(file.type == 'file')
+                    {
+                        const resp = await fetch(file.download_url);
+                        const contents = new Uint8Array(await resp.arrayBuffer());
+                        const file_path = repo_path + '/' + file.path;
+                        FS.writeFile(file_path, contents, {encoding: 'binary'});
+                    }
+                    else if(file.type == 'dir')
+                    {
+				        FS.mkdir(repo_path + '/' + file.path);
+                        const resp = await this.github_api_request(https_path, '/contents/' + file.path);
+                        const dir = await resp.json();
+                        repo.push(...dir);
+                    }
+				}
+				this.println(`Unpacking objects: 100% (${repo.length}/${repo.length}), done.`);
+			}
+		
+			async push(file_path, message, retry)
+			{
+				const content = FS.readFile(file_path, {encoding : 'utf8'});
+				let sha = this.read_githubcontents().filter(f => f.path == file_path);
+				sha = sha.length > 0 ? sha[0].sha : null;
+				const resp = await this.github_api_request(this.read_https_path(), '/contents/' + file_path, 'put', Object.assign({message : `${file_path}: ${message}`, content : base64_encode_utf8(content)}, sha ? {sha : sha} : {}));
+				if(resp.ok)
+					sha = (await resp.json()).content.sha;
+				else if(resp.status == 409 && retry != false)
+				{
+					console.log('retry not implemented');
+					//await delay(this.retry_delay_seconds);
+					//await this.put(message, sha ? ((await this.init_doc()) || this.sha) : null, false);
+				}
+				else
+					throw network_error(resp);
+			}
+		}
+
+        function copytree(file_path, src_FS, dst_FS)
         {
-            return '/dist/' + remote_package_name
-        },
+            dst_FS.mkdir(file_path);
+            const files = src_FS.lookupPath(file_path).node.contents;
+            for(const file_name of Object.keys(files))
+            {
+                const file = files[file_name];
+                const path = `${file_path}/${file_name}`;
+                if(!file.isFolder)
+                    dst_FS.writeFile(path, src_FS.readFile(path, {encoding : 'binary'}));
+                else
+                    copytree(path, src_FS, dst_FS);
+            }
+        }
+
+        class Shell
+        {
+            constructor(FS, term, println)
+            {
+                this.home = '/home/web_user';
+                this.term = term;
+                this.FS = FS;
+                this.println = println;
+                
+                this.github_auth_token = window.location.hash || '';
+                if(this.github_auth_token.length > 1)
+                    this.github_auth_token = this.github_auth_token.slice(1);
+
+                this.github_https_path = window.location.search || '';
+                if(this.github_https_path.length > 1)
+                    this.github_https_path = 'https://github.com' + this.github_https_path.slice(1);
+                
+                this.guthub = new Guthub(self.github_auth_token, println);
+            }
+
+            async onload()
+            {
+                if(this.github_https_path.length > 0)
+                {
+                    const repo_path = await this.clone(this.github_https_path);
+                    this.cd(repo_path);
+                }
+            }
+
+            open(file_path)
+            {
+                if(file_path.endsWith('.pdf') || file_path.endsWith('.jpg') || file_path.endsWith('.png') || file_path.endsWith('.svg'))
+                {
+                    const contents = this.FS.readFile(file_path, {encoding : 'binary'});
+                    open_in_viewer(contents, file_path);
+                }
+                else
+                {
+                    const contents = this.FS.readFile(file_path, {encoding : 'utf8'});
+			        window.monaco_editor.getModel().setValue(contents);
+                }
+            }
+
+            help()
+            {
+                return ['help', 'latexmk', 'download', 'clear', 'pwd', 'ls', 'mkdir', 'cd', 'clone', 'push', 'open', 'save'].sort();
+            }
+
+            save(file_path, contents)
+            {
+				this.FS.writeFile(file_path, contents);
+            }
+
+            pwd(replace_home)
+            {
+                const cwd = this.FS ? FS.cwd() : this.home;
+                return replace_home == true ? cwd.replace(this.home, '~') : cwd;    
+            }
+            
+            clear()
+            {
+                this.term.write('\x1bc');
+            }
+
+            ls(path)
+            {
+                return Object.keys(this.FS.lookupPath(path || '.').node.contents);
+            }
+            
+            cd(path)
+            {
+                //const expanduser = path => return path.replace('~', this.home);
+                this.FS.chdir(path);
+            }
+
+            mkdir(path)
+            {
+                this.FS.mkdir(path);
+            }
+
+            async latexmk(file_path)
+            {
+                console.assert(file_path.endsWith('.tex'));
+
+                const fmt_xelatex = '/xelatex.fmt';
+                const cnf_texlive = '/texmf.cnf';
+                const bin_busytex = '/bin/busytex';
+                const dir_texmfdist = '/texlive/texmf-dist:';
+                const dir_fontconfig = '/fontconfig';
+                const conf_fontconfig = 'texlive-fontconfig.conf';
+
+                const Module_busytex = 
+                {
+                    noInitialRun : true,
+
+                    thisProgram : bin_busytex,
+
+                    preRun : [() =>
+                    {
+                        const ENV = Module_busytex.ENV;
+                        ENV.TEXMFDIST = dir_texmfdist;
+                        ENV.FONTCONFIG_PATH = dir_fontconfig;
+                        ENV.FONTCONFIG_FILE = conf_fontconfig;
+                    }],
+                    
+                    print(text) 
+                    {
+                        Module_busytex.setStatus('stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+                    },
+
+                    printErr(text)
+                    {
+                        Module_busytex.setStatus('stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+                    },
+                    
+                    setStatus(text)
+                    {
+                        let statusElement = document.getElementById('status');
+                        statusElement.value += (this.statusPrefix || '') + text + '\n';
+                        statusElement.scrollTop = statusElement.scrollHeight;
+                    },
+                    
+                    monitorRunDependencies(left)
+                    {
+                        this.totalDependencies = Math.max(this.totalDependencies, left);
+                        Module_busytex.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+                    },
+                    
+                    totalDependencies: 0,
+                };
+
+                const Module = await busytex(Module_busytex);
+                const cwd = this.FS.cwd();
+                console.assert(cwd.startsWith(this.home));
+
+                const source_dir = cwd.split('/').slice(0, 4).join('/');
+                copytree(source_dir, this.FS, Module.FS);
+                const source_path = `${cwd}/${file_path}`;
+                const source_name = source_path.slice(source_path.lastIndexOf('/') + 1)
+				const dirname = source_path.slice(0, source_path.length - source_name.length)
+                Module.FS.chdir(dirname);
+                
+                Module.callMain(['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_xelatex,  source_name]);
+                console.log('After xetex');
+                //Module.callMain(['dvipdfmx', source_name.replace('.tex', '.xdv')]);
+                
+                //const pdf = Module.FS.readFile(source_path.replace('.tex', '.pdf'), {encoding: 'binary'});
+                //this.FS.writeFile(file_path.replace('.tex', '.pdf'), pdf);
+            }
+
+            async upload(file_path)
+            {
+                const fileupload = document.getElementById('fileupload');
+                const reader = new FileReader();
+                return new Promise((resolve, reject) =>
+                {
+                    reader.onloadend = () => {
+                        this.FS.writeFile(file_path, new Uint8Array(reader.result));
+                        resolve(`Local file [${fileupload.files[0].name}] uploaded into [${file_path}]`);
+                    };
+                    fileupload.onchange = () => reader.readAsArrayBuffer(fileupload.files[0]);
+                    fileupload.click();
+                });
+            }
+		
+            download(file_path, mime)
+            {
+                  mime = mime || "application/octet-stream";
+
+                  let content = FS.readFile(file_path);
+                  console.log(`Offering download of "${file_path}", with ${content.length} bytes...`);
+
+                  var a = document.createElement('a');
+                  a.download = file_path;
+                  a.href = URL.createObjectURL(new Blob([content], {type: mime}));
+                  a.style.display = 'none';
+
+                  document.body.appendChild(a);
+                  a.click();
+                  setTimeout(() => {
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(a.href);
+                  }, 2000);
+            }
+            
+            async clone(https_path)
+            {
+			    const repo_path = https_path.split('/').pop();
+                await this.guthub.clone(https_path, repo_path);
+                return repo_path;
+            }
+
+            async push(relative_file_path)
+            {
+                await this.guthub.push(relative_file_path, 'guthub');
+            }
+        }
+		
+		function open_in_viewer(contents, file_path)
+		{
+			const imgcanvas = document.getElementById('imgcanvas'), pdfcanvas = document.getElementById('pdfcanvas');
+			if(file_path.endsWith('.svg'))
+			{
+				[imgcanvas.hidden, pdfcanvas.hidden] = [false, true];
+				imgcanvas.src = 'data:image/svg+xml;base64,' + btoa(String.fromCharCode.apply(null, contents));
+			}
+			else if(file_path.endsWith('.png') || file_path.endsWith('.jpg'))
+			{
+				[imgcanvas.hidden, pdfcanvas.hidden] = [false, true];
+				const ext = file_path.endsWith('.png') ? 'png' : 'jpg';
+				imgcanvas.src = `data:image/${ext};base64,` + btoa(String.fromCharCode.apply(null, contents));
+			}
+			else if(file_path.endsWith('.pdf'))
+			{
+                //document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
+				[imgcanvas.hidden, pdfcanvas.hidden] = [true, false];
+				var loadingTask = window.pdf.getDocument({data: contents}).promise.then(function(pdf) {
+					console.log('PDF loaded');
+
+					// Fetch the first page
+					var pageNumber = 1;
+					pdf.getPage(pageNumber).then(function(page) {
+						console.log('Page loaded');
+
+						const scale = 1.5;
+						const viewport = page.getViewport({scale: scale});
+
+						// Prepare canvas using PDF page dimensions
+						const context = pdfcanvas.getContext('2d');
+						pdfcanvas.height = viewport.height;
+						pdfcanvas.width = viewport.width;
+
+						// Render PDF page into canvas context
+						const renderContext = {
+							canvasContext: context,
+							viewport: viewport
+						};
+						const renderTask = page.render(renderContext);
+						renderTask.promise.then(function () {
+							console.log('Page rendered');
+						});
+					});
+				}, function(reason) {
+					console.error(reason);
+				});
+			}
+		}
+
+		var pdfData = atob(
+				'JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog' +
+				'IC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAv' +
+				'TWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0K' +
+				'Pj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAg' +
+				'L1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSIAogICAgPj4KICA+' +
+				'PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9u' +
+				'dAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2Jq' +
+				'Cgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJU' +
+				'CjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVu' +
+				'ZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4g' +
+				'CjAwMDAwMDAwNzkgMDAwMDAgbiAKMDAwMDAwMDE3MyAwMDAwMCBuIAowMDAwMDAwMzAxIDAw' +
+				'MDAwIG4gCjAwMDAwMDAzODAgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9v' +
+				'dCAxIDAgUgo+PgpzdGFydHhyZWYKNDkyCiUlRU9G');
+
+		window.pdf = window['pdfjs-dist/build/pdf'];
+
+		// The workerSrc property shall be specified.
+		window.pdf.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+
+		// Using DocumentInitParameters object to load binary data.
+		open_in_viewer(pdfData, 'helloworld.pdf');
+
+		//import { FitAddon } from 'fit.js';
+		window.terminal = new Terminal();
+		//fitAddon = new FitAddon();
+		//term.loadAddon(fitAddon);
+		window.terminal.open(document.getElementById('terminal'));
+		//fitAddon.fit();
+            
+        window.terminal.prompt = () => window.terminal.write('emscripten:' + new Shell(typeof(FS) == 'undefined' ? null : FS, window.terminal).pwd(true) + '$ ');
+        window.terminal.println = line => window.terminal.write((line || '') + '\r\n');
+		//window.terminal.prompt();
+		var curLine = '';
+        const ok = 'ok!';
+		window.terminal.on('key', async (key, ev) => {
+			const shell = new Shell(FS, window.terminal, window.terminal.println);
+            if(ev.keyCode == 8)
+			{
+				if(curLine.length > 0)
+				{
+					curLine = curLine.slice(0, curLine.length - 1);
+					window.terminal.write('\b \b');
+				}
+			}
+			else if(ev.keyCode == 13)
+			{
+				window.terminal.println();
+				const [cmd, arg] = curLine.split(' ');
+				try
+				{
+					if (cmd == '')
+					{
+					}
+                    else if(cmd == 'clear')
+                    {
+                        shell.clear();
+                    }
+                    else if(cmd == 'help')
+                    {
+                        window.terminal.println(shell.help().join(' '));
+                    }
+                    else if(cmd == 'download')
+                    {
+                        shell.download(arg);
+						window.terminal.println(ok);
+                    }
+                    else if(cmd == 'upload')
+                    {
+                        window.terminal.println(await shell.upload(arg));
+                    }
+					else if(cmd == 'latexmk')
+					{
+                        await shell.latexmk(arg);
+					}
+					else if(cmd == 'pwd')
+					{
+						window.terminal.println(shell.pwd());
+					}
+					else if(cmd == 'ls')
+					{
+						const res = shell.ls(arg);
+                        if(res.length > 0)
+                            window.terminal.println(res.join(' '));
+					}
+					else if(cmd == 'mkdir')
+					{
+						shell.mkdir(arg);
+					}
+					else if(cmd == 'cd')
+					{
+						shell.cd(arg);
+					}
+					else if(cmd == 'clone')
+					{
+                        await shell.clone(arg);
+					}
+					else if(cmd == 'push')
+					{
+						await shell.push(arg);
+						window.terminal.println(ok);
+					}
+					else if(cmd == 'open')
+					{
+                        shell.open(arg);
+					}
+					else if(cmd == 'save')
+					{
+						shell.save(arg, window.monaco_editor.getModel().getValue());
+					}
+					else
+					{
+						window.terminal.println(cmd + ': command not found');
+					}
+				}
+				catch(err)
+				{
+					window.terminal.println('Error: ' + err.message);
+				}
+				window.terminal.prompt();
+				curLine = '';
+			}
+			else
+			{
+				curLine += key;
+				window.terminal.write(key);
+			}
+			
+			//window.terminal.element.scrollIntoView(true);
+		});
+		
+		require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' }});
+		window.MonacoEnvironment = { getWorkerUrl: () => proxy };
+		let proxy = URL.createObjectURL(new Blob([`
+			self.MonacoEnvironment = {
+			baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+			};
+			importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');
+		`], { type: 'text/javascript' }));
+
+		require(["vs/editor/editor.main"], function () {
+			window.monaco_editor = monaco.editor.create(document.getElementById('editor'), {theme: 'vs-dark'});
+		});
+
+		let statusElement = document.getElementById('status');
+
+		var Module = 
+		{
+			noInitialRun : true,
+			
+            preRun: [async () => 
+            {
+                FS.chdir('/home/web_user');
+                await new Shell(FS, window.terminal, window.terminal.println).onload();
+                window.terminal.prompt();
+            }],
+			
+			print(text)
+			{
+				if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+				window.terminal.write(text + '\r\n');
+			},
+
+			printErr(text)
+			{
+				if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+			    Module.print('stderr: ' + text);
+            },
+			
+			setStatus(text)
+			{
+				statusElement.value += (this.statusPrefix || '') + text + '\n';
+				statusElement.scrollTop = statusElement.scrollHeight;
+			},
+			
+			monitorRunDependencies: function(left)
+			{
+				this.totalDependencies = Math.max(this.totalDependencies, left);
+				Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+			},
+			
+			totalDependencies: 0,
+		};
+		Module.setStatus('Downloading Emscripten...');
+		window.onerror = () => { Module.statusPrefix = '[post-exception] ';};
+		</script>
+		<script async type="text/javascript" src="emscriptenfs.js"></script>
         
-        noInitialRun : true,
+        <script type="text/javascript" src="busytex.js"></script>
 
-        thisProgram : bin_busytex,
-
-        preRun : [() =>
-        {
-            const ENV = Module_busytex.ENV;
-            ENV.TEXMFDIST = dir_texmfdist;
-            ENV.FONTCONFIG_PATH = dir_fontconfig;
-            ENV.FONTCONFIG_FILE = conf_fontconfig;
-        }],
-        
-        print(text) 
-        {
-            Module_busytex.setStatus(Module_busytex.prefix + ' | stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
-        },
-
-        printErr(text)
-        {
-            Module_busytex.setStatus(Module_busytex.prefix + ' | stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
-        },
-
-        setPrefix(text)
-        {
-            this.prefix = text;
-        },
-        
-        setStatus(text)
-        {
-            let statusElement = document.getElementById('status');
-            statusElement.value += (this.statusPrefix || '') + text + '\n';
-            statusElement.scrollTop = statusElement.scrollHeight;
-        },
-        
-        monitorRunDependencies(left)
-        {
-            this.totalDependencies = Math.max(this.totalDependencies, left);
-            Module_busytex.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-        },
-        
-        totalDependencies: 0,
-        prefix : ""
-    };
-
-    main(await busytex(Module_busytex));
-}
-
-</script>
-
-
-</body></html>
+	</body>
+</html>

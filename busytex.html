@@ -1,0 +1,156 @@
+<html><body style="width: 100%; height: 100%; overflow: hidden">
+
+<div><iframe style="width: 98%; height:30%" id="preview"></iframe></div>
+
+<div><textarea style="width: 98%; height: 25%" id="tex">
+\documentclass[11pt]{article}
+\begin{document}
+\title{My Article}
+\author{Nobody Jr.}
+\date{Today}
+\maketitle
+Blablabla said Nobody ~\cite{Nobody06}.
+\bibliography{example}{}
+\bibliographystyle{plain}
+\end{document}
+</textarea></div>
+<div><textarea style="width: 98%; height: 15%" id="bib">
+@misc{Nobody06,
+   author = "Nobody Jr",
+   title = "My Article",
+   year = "2006" 
+}
+</textarea></div>
+
+<div><textarea style="width: 98%; height: 25%" id="status"></textarea></div>
+<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="compile()">Compile</button></div> 
+
+
+<script type="text/javascript" src="dist/busytex.js"></script>
+<script>
+
+const bin_busytex = '/bin/busytex';
+const fmt_latex = '/latex.fmt';
+const dir_texmfdist = '/texlive/texmf-dist:';
+const cnf_texlive = '/texmf.cnf';
+const dir_fontconfig = '/fontconfig';
+const conf_fontconfig = 'texlive.conf';
+
+const home = '/home/web_user';
+const tex_path = home + '/example.tex';
+const bib_path = home + '/example.bib';
+const aux_path = home + '/example.aux';
+
+function NOCLEANUP_callMain(Module, args)
+{
+	Module.setPrefix(args[0]);
+    const entryFunction = Module['_main'];
+	const argc = args.length+1;
+	const argv = Module.stackAlloc((argc + 1) * 4);
+	Module.HEAP32[argv >> 2] = Module.allocateUTF8OnStack(Module.thisProgram);
+	for (let i = 1; i < argc; i++) 
+		Module.HEAP32[(argv >> 2) + i] = Module.allocateUTF8OnStack(args[i - 1]);
+	Module.HEAP32[(argv >> 2) + argc] = 0;
+	try
+	{
+		entryFunction(argc, argv);
+	}
+	catch(e)
+	{
+		console.log('Caught', e);
+        return e.status;
+	}
+	return 0;
+}
+
+
+function main(Module)
+{
+    const FS = Module.FS;
+	const ls = path => console.log(Object.keys(FS.lookupPath(path).node.contents));
+    
+    const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
+
+    FS.chdir(home);
+    FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
+    FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
+
+    let exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
+    
+    //exit_code = NOCLEANUP_callMain(Module, ['bibtex8', '--debug=search','--csfile', '/bibtex/88591lat.csf', 'example']);
+    //Module.print(`\nEXIT CODE: ${exit_code}\n`);
+
+    exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
+    
+    //exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
+    //Module.print(`\nEXIT CODE: ${exit_code}\n`);
+    
+    exit_code = NOCLEANUP_callMain(Module, ['xdvipdfmx', tex_path.replace('.tex', '.xdv')]);
+    Module.print(`\nEXIT CODE: ${exit_code}\n`);
+    
+    const pdf = FS.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
+    document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
+}
+
+async function compile()
+{
+    const Module_busytex = 
+    {
+        locateFile(remote_package_name)
+        {
+            return '/dist/' + remote_package_name
+        },
+        
+        noInitialRun : true,
+
+        thisProgram : bin_busytex,
+
+        preRun : [() =>
+        {
+            const ENV = Module_busytex.ENV;
+            ENV.TEXMFDIST = dir_texmfdist;
+            ENV.FONTCONFIG_PATH = dir_fontconfig;
+            ENV.FONTCONFIG_FILE = conf_fontconfig;
+        }],
+        
+        print(text) 
+        {
+            Module_busytex.setStatus(Module_busytex.prefix + ' | stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+
+        printErr(text)
+        {
+            Module_busytex.setStatus(Module_busytex.prefix + ' | stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+
+        setPrefix(text)
+        {
+            this.prefix = text;
+        },
+        
+        setStatus(text)
+        {
+            let statusElement = document.getElementById('status');
+            statusElement.value += (this.statusPrefix || '') + text + '\n';
+            statusElement.scrollTop = statusElement.scrollHeight;
+        },
+        
+        monitorRunDependencies(left)
+        {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+            Module_busytex.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        },
+        
+        totalDependencies: 0,
+        prefix : ""
+    };
+
+    main(await busytex(Module_busytex));
+}
+
+</script>
+
+
+</body></html>

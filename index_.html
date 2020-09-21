@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Texet</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/xterm@3.8.0/dist/xterm.css"
+    />
+  </head>
+  <body style="width: 100%; height: 100%">
+    <div
+      id="editor"
+      style="width: 50%; height: 50%; border: 1px solid grey"
+    ></div>
+    <div id="terminal" style="width: 100%; height: 50%"></div>
+
+    <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.js"></script>
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.worker.js"></script>
+    <script>
+      require.config({
+        paths: {
+          vs: 'https://unpkg.com/monaco-editor@latest/min/vs',
+          xterm: 'https://unpkg.com/xterm@3.8.0/dist'
+        }
+      })
+
+      // Before loading vs/editor/editor.main, define a global MonacoEnvironment that overwrites
+      // the default worker url location (used when creating WebWorkers). The problem here is that
+      // HTML5 does not allow cross-domain web workers, so we need to proxy the instantiation of
+      // a web worker through a same-domain script
+      window.MonacoEnvironment = {
+        getWorkerUrl: function (workerId, label) {
+          return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+              self.MonacoEnvironment = {
+                baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+              };
+              importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');`)}`
+        }
+      }
+
+      require([
+        'vs/editor/editor.main',
+        'xterm/xterm',
+        'xterm/addons/fit/fit',
+        'pdfjs-dist/build/pdf'
+      ], function (editor, Terminal, fit, pdf) {
+        console.log('loaded')
+
+        editor.editor.create(document.getElementById('editor'), {
+          theme: 'vs-dark'
+        })
+
+        Terminal.applyAddon(fit)
+        let xterm = new Terminal()
+        xterm.open(document.getElementById('terminal'))
+        xterm.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+        xterm.fit()
+      })
+    </script>
+  </body>
+</html>
