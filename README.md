@@ -122,9 +122,7 @@ https://mozilla.github.io/pdf.js/examples/index.html#interactive-examples
 
 https://github.com/AREA44/vscode-LaTeX-support
 
-https://registry.npmjs.org/monaco-editor/-/monaco-editor-0.20.0.tgz
-
-https://people.math.osu.edu/fowler.291/latex/
+https://github.com/microsoft/monaco-languages
 
 https://browsix.org/latex-demo-sync/
 
