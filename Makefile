@@ -70,9 +70,12 @@ OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIP
 OBJ_XETEX = libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_DVIPDF = texlive/texk/dvipdfm-x/xdvipdfmx.a
 OBJ_BIBTEX = texlive/texk/bibtex-x/bibtex8.a
+
+#texlive/libs/icu/icu-build/lib/libicuio.a texlive/libs/icu/icu-build/lib/libicui18n.a 
 OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
 INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 
+.PHONY: all
 all:
 	make texlive
 	make native
@@ -270,10 +273,12 @@ build/wasm/busytex.js:
 
 ################################################################################################################
 
+.PHONY: texlive
 texlive:
 	make source/texlive.downloaded
 	make source/texlive.patched
 
+.PHONY: native
 native: 
 	#make build/native/texlive.configured
 	#make build/native/texlive/libs/libpng/libpng.a 
@@ -296,6 +301,7 @@ native:
 	make build/native/texlive/texk/bibtex-x/bibtex8
 	#make build/native/busytex
 
+.PHONY: tds
 tds:
 	make build/install-tl/install-tl
 	make build/texlive/profile.input
@@ -305,6 +311,7 @@ tds:
 	make build/fontconfig/texlive.conf
 	make build/wasm/texlive.data
 
+.PHONY: wasm
 wasm:
 	#make build/wasm/texlive.configured
 	#make build/wasm/texlive/libs/libpng/libpng.a 
@@ -325,31 +332,36 @@ wasm:
 	#make build/wasm/texlive/texk/web2c/libxetex.a
 	make build/wasm/busytex.js
 
+.PHONY: example
 example:
 	mkdir -p example/assets/large
 	echo "console.log('Hello world now')" > example/assets/test.txt
-	wget -O example/assets/test.png https://www.google.fr/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png
-	wget -O example/assets/test.svg https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg
-	wget -O example/assets/large/test.pdf https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf
+	wget --no-clobber -O example/assets/test.png https://www.google.fr/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png
+	wget --no-clobber -O example/assets/test.svg https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_France.svg
+	wget --no-clobber -O example/assets/large/test.pdf https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf
 
+.PHONY: clean_tds
 clean_tds:
 	rm -rf build/texlive
 
+.PHONY: clean_native
 clean_native:
 	rm -rf build/native
 
+.PHONY: clean_format
 clean_format:
 	rm -rf build/format
 
+.PHONY: clean_dist
 clean_dist:
 	rm -rf dist
 
+.PHONY: clean
 clean:
 	rm -rf build source
 
+.PHONY: dist
 dist:
 	mkdir -p $@
 	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
-
-.PHONY:	example dist install all texlive tds native wasm clean clean_tds clean_dist clean_native clean_format

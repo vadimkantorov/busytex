@@ -36,10 +36,10 @@ const cnf_texlive = '/texmf.cnf';
 const dir_fontconfig = '/fontconfig';
 const conf_fontconfig = 'texlive.conf';
 
-const home = '/home/web_user';
-const tex_path = home + '/example.tex';
-const bib_path = home + '/example.bib';
-const aux_path = home + '/example.aux';
+const project = '/home/web_user/example';
+const tex_path = project + '/example.tex';
+const bib_path = project + '/example.bib';
+const aux_path = project + '/example.aux';
 
 function NOCLEANUP_callMain(Module, args)
 {
@@ -71,9 +71,10 @@ function main(Module)
     
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
 
-    FS.chdir(home);
+    FS.mkdir(project);
     FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
     FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
+    FS.chdir(project);
 
     let exit_code = NOCLEANUP_callMain(Module, ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path]);
     Module.print(`\nEXIT CODE: ${exit_code}\n`);
