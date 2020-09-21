@@ -22,10 +22,12 @@ EXPAT_BUILD_DIR=$(ROOT)/build/wasm/expat
 PREFIX_wasm = $(ROOT)/build/wasm/prefix
 PREFIX_native = $(ROOT)/build/native/prefix
 
-MAKE_wasm = emmake
-CMAKE_wasm = emcmake
+MAKE_wasm = emmake make
+CMAKE_wasm = emcmake cmake
 CONFIGURE_wasm = emconfigure
 AR_wasm = emar
+MAKE_native = make
+CMAKE_native = cmake
 AR_native = $(AR)
 
 TOTAL_MEMORY = 536870912
@@ -37,10 +39,10 @@ CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
 CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_dvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair
-CFLAGS_BIBTEXU = -Dmain='__attribute__((visibility(\"default\"))) busymain_bibtexu' -Dinitialize=bibtex_initialize -Deoln=bibtex_eoln -Dlast=bibtex_last -Dhistory=bibtex_history -Dbad=bibtex_bad -Dxchr=bibtex_xchr -Dbuffer=bibtex_buffer -Dclose_file=bibtex_close_file -Dusage=bibtex_usage
+CFLAGS_BIBTEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_bibtex' -Dinitialize=bibtex_initialize -Deoln=bibtex_eoln -Dlast=bibtex_last -Dhistory=bibtex_history -Dbad=bibtex_bad -Dxchr=bibtex_xchr -Dbuffer=bibtex_buffer -Dclose_file=bibtex_close_file -Dusage=bibtex_usage
 CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex'
 
-CFLAGS_wasm_bibtexu = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
+CFLAGS_wasm_bibtex = -s TOTAL_MEMORY=$(TOTAL_MEMORY)
 CFLAGS_wasm_texlive = -s ERROR_ON_UNDEFINED_SYMBOLS=0 -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/source/fontconfig
 CFLAGS_wasm_icu = -s ERROR_ON_UNDEFINED_SYMBOLS=0
 # bug: https://github.com/emscripten-core/emscripten/issues/12093
@@ -59,7 +61,7 @@ CCSKIP_wasm_xetex = python3 $(ROOT)/ccskip.py $(addprefix $(ROOT)/build/native/t
 
 OPTS_wasm_icu_configure = CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
 OPTS_wasm_icu_make = -e PKGDATA_OPTS="$(PKGDATAFLAGS_wasm_icu)" -e CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" -e CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
-OPTS_wasm_bibtexu = -e CFLAGS="$(CFLAGS_BIBTEXU) $(CFLAGS_wasm_bibtexu)" -e CXXFLAGS="$(CFLAGS_BIBTEXU) $(CFLAGS_wasm_bibtexu)"
+OPTS_wasm_bibtex = -e CFLAGS="$(CFLAGS_BIBTEX) $(CFLAGS_wasm_bibtex)" -e CXXFLAGS="$(CFLAGS_BIBTEX) $(CFLAGS_wasm_bibtex)"
 OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
 OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc $(CFLAGS_XETEX)" CXX="$(CCSKIP_wasm_xetex) em++ $(CFLAGS_XETEX)"
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX)" CXX="em++ $(CFLAGS_XDVIPDFMX)"
@@ -67,7 +69,7 @@ OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX)" CXX="$(CXX) $(CFLAGS_XDVIP
 
 OBJ_XETEX = libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o libxetex.a
 OBJ_DVIPDF = texlive/texk/dvipdfm-x/xdvipdfmx.a
-OBJ_BIBTEX = texlive/texk/bibtex-x/bibtexu.a
+OBJ_BIBTEX = texlive/texk/bibtex-x/bibtex8.a
 OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
 INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 
@@ -129,29 +131,29 @@ build/%/texlive.configured: source/texlive.patched
 	  --with-banner-add="_BUSY$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"		\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)" &&   \
-	$(MAKE_$*) make 
+	$(MAKE_$*) 
 	touch $@
 
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	cd build/wasm/texlive/libs/icu && \
 	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
-	$(MAKE_wasm) make  $(OPTS_wasm_icu_make) && \
+	$(MAKE_wasm) $(OPTS_wasm_icu_make) && \
 	echo "$(SKIP)" > icu-build/test/Makefile && \
-	$(MAKE_wasm) make -C icu-build  $(OPTS_wasm_icu_make) 
+	$(MAKE_wasm) -C icu-build  $(OPTS_wasm_icu_make) 
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive.configured
-	make -C build/native/texlive/libs/icu 
-	make -C build/native/texlive/libs/icu/icu-build 
+	$(MAKE_native) -C build/native/texlive/libs/icu 
+	$(MAKE_native) -C build/native/texlive/libs/icu/icu-build 
 
 build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured build/native/texlive/libs/freetype2/libfreetype.a
-	cd $(dir $@) && $(MAKE_wasm) make $(OPTS_wasm_freetype2)
+	cd $(dir $@) && $(MAKE_wasm) $(OPTS_wasm_freetype2)
 
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
-	$(MAKE_$*) make -C $(dir $@)  
+	$(MAKE_$*) -C $(dir $@)  
 
 build/%/expat/libexpat.a: source/expat.downloaded
 	mkdir -p $(dir $@) && cd $(dir $@) && \
-	$(CMAKE_$*) cmake \
+	$(CMAKE_$*)  \
 	   -DEXPAT_BUILD_DOCS=off \
 	   -DEXPAT_SHARED_LIBS=off \
 	   -DEXPAT_BUILD_EXAMPLES=off \
@@ -159,7 +161,7 @@ build/%/expat/libexpat.a: source/expat.downloaded
 	   -DEXPAT_BUILD_TESTS=off \
 	   -DEXPAT_BUILD_TOOLS=off \
 	   $(ROOT)/$(basename $<) 
-	$(MAKE_$*) make -C $(dir $@)
+	$(MAKE_$*) -C $(dir $@)
 
 build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/expat/libexpat.a build/%/texlive/libs/freetype2/libfreetype.a
 	mkdir -p $(dir $@) && cd $(dir $@) && \
@@ -172,32 +174,35 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 	   --with-expat-includes="$(ROOT)/source/expat/lib" \
 	   --with-expat-lib="$(ROOT)/build/$*/expat" \
 	   CFLAGS="$(CFLAGS_$*_fontconfig)" FREETYPE_CFLAGS="$(CFLAGS_$*_fontconfig_FREETYPE)" FREETYPE_LIBS="$(LIBS_$*_fontconfig_FREETYPE)" && \
-	$(MAKE_$*) make 
+	$(MAKE_$*)  
 
 ################################################################################################################
 
-build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtexu: build/native/texlive.configured
-	$(MAKE_native) make -C $(dir $@) clean
-	$(MAKE_native) make -C $(dir $@)
+build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtex8: build/native/texlive.configured
+	$(MAKE_native) -C $(dir $@) clean
+	$(MAKE_native) -C $(dir $@)
 	
+build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
+	$(MAKE_wasm) -C $(dir $@) clean
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
+	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
-build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup build/wasm/texlive/texk/bibtex-x/bibtexu.patcheddup: build/wasm/texlive.configured
+build/wasm/texlive/texk/dvipdfm-x/bibtex8.a: build/wasm/texlive.configured
 	#TODO: set CSFINPUT=/bibtex
-	$(MAKE_wasm) make -C $(dir $@) clean
-	$(MAKE_wasm) make -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
-	$(AR_wasm) -crs $(basename $@).a $(dir $@)/*.o
-	#touch $@
+	$(MAKE_wasm) -C $(dir $@) clean
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
+	$(AR_wasm) -crs $@ $(dir $@)/bibtex8-*.o
 
-build/wasm/texlive/texk/web2c/xetex-xetex0.o:
+build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	# copying generated C files from native version, since string offsets are off
 	# many more object files are produced
-	$(MAKE_wasm) make -C $(dir $@) clean
+	$(MAKE_wasm) -C $(dir $@) clean
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
-	$(MAKE_wasm) make -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
+	$(MAKE_wasm) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
 
 build/native/texlive/texk/web2c/xetex: 
-	$(MAKE_native) make -C $(dir $@) xetex 
+	$(MAKE_native) -C $(dir $@) xetex 
 
 
 ################################################################################################################
@@ -232,14 +237,13 @@ build/texlive/texmf-dist: build/install-tl/install-tl build/texlive/profile.inpu
 	rm -rf $(addprefix $(dir $@)/, bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/web2c)
 
 build/format/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive/texmf-dist 
-	mkdir -p build/format
+	mkdir -p $(dir $@)
+	rm $(dir $@)/* || true
 	wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
-	rm build/format/*
 	unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
-	cd $(dir $@) && \
-	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/$< -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex unpack.ins && \
-	touch hyphen.cfg && \
-	TEXMFCNF=$(ROOT) TEXMFDIST=$(ROOT)/build/texlive/texmf-dist $(ROOT)/$< -interaction=nonstopmode -output-directory=$(ROOT)/build/format -ini -etex latex.ltx
+	TEXMFCNF=$(ROOT) TEXMFDIST=build/texlive/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
+	touch hyphen.cfg 
+	TEXMFCNF=$(ROOT) TEXMFDIST=build/texlive/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
 
 build/wasm/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/fontconfig/texlive.conf build/texmf.cnf
 	#https://github.com/emscripten-core/emscripten/issues/12214
@@ -289,7 +293,7 @@ native:
 	# busy 
 	#make build/native/texlive/texk/web2c/xetex
 	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx
-	make build/native/texlive/texk/bibtex-x/bibtexu
+	make build/native/texlive/texk/bibtex-x/bibtex8
 	#make build/native/busytex
 
 tds:
@@ -315,10 +319,10 @@ wasm:
 	#make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
 	#make build/wasm/expat/libexpat.a
 	#make build/wasm/fontconfig/src/.libs/libfontconfig.a
-	##make build/wasm/texlive/texk/bibtex-x/bibtexu 
 	## busy
-	#make build/wasm/texlive/texk/web2c/xetex-xetex0.o
-	#make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.patcheddup 
+	#make build/wasm/texlive/texk/dvipdfm-x/bibtex8.a
+	#make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
+	#make build/wasm/texlive/texk/web2c/libxetex.a
 	make build/wasm/busytex.js
 
 clean_tds:
