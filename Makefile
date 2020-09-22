@@ -190,13 +190,13 @@ build/native/texlive/texk/web2c/xetex:
 
 build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
 	$(MAKE_wasm) -C $(dir $@) clean
-	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_xdvipdfmx)
 	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
-build/wasm/texlive/texk/dvipdfm-x/bibtex8.a: build/wasm/texlive.configured
+build/wasm/texlive/texk/bibtex-x/bibtex8.a: build/wasm/texlive.configured
 	#TODO: set CSFINPUT=/bibtex
 	$(MAKE_wasm) -C $(dir $@) clean
-	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_$(notdir $(basename $@)))
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_bibtex)
 	$(AR_wasm) -crs $@ $(dir $@)/bibtex8-*.o
 
 build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
@@ -251,14 +251,12 @@ build/wasm/texlive.data: build/format/latex.fmt build/texlive/texmf-dist build/f
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
-	# --use-preload-cache
-	python3 $(EMROOT)/tools/file_packager.py $@ --js-output=build/wasm/texlive.js --lz4 \
+	python3 $(EMROOT)/tools/file_packager.py $@ --js-output=build/wasm/texlive.js --lz4 --use-preload-cache \
 		--preload build/empty@/bin/busytex \
 		--preload build/fontconfig/texlive.conf@/fontconfig/texlive.conf \
 		--preload build/texmf.cnf@/texmf.cnf \
 		--preload build/texlive@/texlive \
 		--preload source/texlive/texk/bibtex-x/csf@/bibtex \
-		--preload build/empty@/hello \
 		--preload $<@/latex.fmt
 		
 
@@ -268,7 +266,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js:
-	emcc -s ALLOW_MEMORY_GROWTH=1 -s MODULARIZE=1 -s ASSERTIONS=1 -s EXPORT_NAME=busytex -o $@ -g -O2 --pre-js build/wasm/texlive.js -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s INVOKE_RUN=0 -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+	emcc -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=1 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1  -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' --pre-js build/wasm/texlive.js -o $@ -g -O2 -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
@@ -361,7 +359,7 @@ clean:
 .PHONY: dist
 dist:
 	mkdir -p $@
-	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm  $@
+	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
 .PHONY: dist/emscriptenfs.js

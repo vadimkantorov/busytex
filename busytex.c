@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     {
         argv[1] = argv[0];
         optind = 1;
-        return busymain_dvipdfmx(argc - 1, argv + 1);
+        return busymain_xdvipdfmx(argc - 1, argv + 1);
     }
     else if(strcmp("bibtex8", argv[1]) == 0)
     {
