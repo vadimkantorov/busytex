@@ -53,8 +53,7 @@
       <div id="editor"></div>
       <div id="viewer">
         <iframe id="pdfpreview"></iframe>
-        <canvas hidden id="pdfcanvas"></canvas>
-        <img hidden id="imgcanvas"></img>
+        <img hidden id="imgpreview"></img>
       </div>
     </div>
     <div style="display: flex; flex-direction: column; height: 50%">
@@ -249,16 +248,33 @@
             }
         }
 
-        open(file_path)
+        open(file_path, contents)
         {
             if(file_path.endsWith('.pdf') || file_path.endsWith('.jpg') || file_path.endsWith('.png') || file_path.endsWith('.svg'))
             {
-                const contents = this.FS.readFile(file_path, {encoding : 'binary'});
-                open_in_viewer(contents, file_path);
+                contents = contents || this.FS.readFile(file_path, {encoding : 'binary'});
+                
+                const imgpreview = document.getElementById('imgpreview'), pdfpreview = document.getElementById('pdfpreview');
+                if(file_path.endsWith('.svg'))
+                {
+                    imgpreview.src = 'data:image/svg+xml;base64,' + btoa(String.fromCharCode.apply(null, contents));
+                    [imgpreview.hidden, pdfpreview.hidden] = [false, true];
+                }
+                else if(file_path.endsWith('.png') || file_path.endsWith('.jpg'))
+                {
+                    const ext = file_path.endsWith('.png') ? 'png' : 'jpg';
+                    imgpreview.src = `data:image/${ext};base64,` + btoa(String.fromCharCode.apply(null, contents));
+                    [imgpreview.hidden, pdfpreview.hidden] = [false, true];
+                }
+                else if(file_path.endsWith('.pdf'))
+                {
+                    document.getElementById('pdfpreview').src = URL.createObjectURL(new Blob([contents], {type: 'application/pdf'}));
+                    [imgpreview.hidden, pdfpreview.hidden] = [true, false];
+                }
             }
             else
             {
-                const contents = this.FS.readFile(file_path, {encoding : 'utf8'});
+                contents = contents || this.FS.readFile(file_path, {encoding : 'utf8'});
                 window.editor.getModel().setValue(contents);
             }
         }
@@ -385,75 +401,22 @@
         }
     }
     
-    function open_in_viewer(contents, file_path)
+    var cur_line = '';
+    const onkey = async (key, ev) =>
     {
-        const imgcanvas = document.getElementById('imgcanvas'), pdfcanvas = document.getElementById('pdfcanvas'), pdfpreview = document.getElementById('pdfpreview');
-        if(file_path.endsWith('.svg'))
-        {
-            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [false, true, true];
-            imgcanvas.src = 'data:image/svg+xml;base64,' + btoa(String.fromCharCode.apply(null, contents));
-        }
-        else if(file_path.endsWith('.png') || file_path.endsWith('.jpg'))
-        {
-            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [false, true, true];
-            const ext = file_path.endsWith('.png') ? 'png' : 'jpg';
-            imgcanvas.src = `data:image/${ext};base64,` + btoa(String.fromCharCode.apply(null, contents));
-        }
-        else if(file_path.endsWith('.pdf'))
-        {
-            document.getElementById('pdfpreview').src = URL.createObjectURL(new Blob([contents], {type: 'application/pdf'}));
-            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [true, true, false];
-            
-            /*
-            var loadingTask = window.pdf.getDocument({data: contents}).promise.then(function(pdf) {
-                console.log('PDF loaded');
-
-                // Fetch the first page
-                var pageNumber = 1;
-                pdf.getPage(pageNumber).then(function(page) {
-                    console.log('Page loaded');
-
-                    const scale = 1.5;
-                    const viewport = page.getViewport({scale: scale});
-
-                    // Prepare canvas using PDF page dimensions
-                    const context = pdfcanvas.getContext('2d');
-                    pdfcanvas.height = viewport.height;
-                    pdfcanvas.width = viewport.width;
-
-                    // Render PDF page into canvas context
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: viewport
-                    };
-                    const renderTask = page.render(renderContext);
-                    renderTask.promise.then(function () {
-                        console.log('Page rendered');
-                    });
-                });
-            }, function(reason) {
-                console.error(reason);
-            });
-            */
-        }
-    }
-
-    var curLine = '';
-    const ok = 'ok!';
-    const onkey = async (key, ev) => {
-        const shell = new Shell(FS, window.terminal, window.terminal.println);
+        const ok = 'ok!';
         if(ev.keyCode == 8)
         {
-            if(curLine.length > 0)
+            if(cur_line.length > 0)
             {
-                curLine = curLine.slice(0, curLine.length - 1);
+                cur_line = cur_line.slice(0, cur_line.length - 1);
                 window.terminal.write('\b \b');
             }
         }
         else if(ev.keyCode == 13)
         {
             window.terminal.println();
-            const [cmd, arg] = curLine.split(' ');
+            const [cmd, arg] = cur_line.split(' ');
             try
             {
                 if (cmd == '')
@@ -525,15 +488,13 @@
                 window.terminal.println('Error: ' + err.message);
             }
             window.terminal.prompt();
-            curLine = '';
+            cur_line = '';
         }
         else
         {
-            curLine += key;
+            cur_line += key;
             window.terminal.write(key);
         }
-        
-        //window.terminal.element.scrollIntoView(true);
     };
 
     require.config({
@@ -563,7 +524,6 @@
         'xterm/addons/fit/fit',
         './dist/emscriptenfs',
         './dist/busytex.js'
-        //'pdfjs-dist/build/pdf'
       ], async function (editor, Terminal, fit, emscriptenfs) {
 
         window.editor = editor.editor.create(document.getElementById('editor'), {
@@ -580,32 +540,13 @@
         const Module = await emscriptenfs(modularized_module(null, () =>  {}));
         window.FS = Module.FS;
         window.FS.chdir('/home/web_user') 
-        const shell = new Shell(window.FS, window.terminal, window.terminal.println);
-        await shell.onload();
+        window.shell = new Shell(window.FS, window.terminal, window.terminal.println);
+        await window.shell.onload();
         window.terminal.prompt();
-
-        const pdf_helloworld = atob(document.getElementById('helloworld').innerHTML);
-        /*
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js'
-        let pdf = await pdfjsLib.getDocument({ data: pdf_helloworld }).promise
-        let page = await pdf.getPage(1)
-        const scale = 1.5
-        let viewport = page.getViewport({ scale: scale })
-        let canvas = document.getElementById('pdfcanvas')
-        let context = canvas.getContext('2d')
-        canvas.height = viewport.height
-        canvas.width = viewport.width
-        var renderContext = {
-          canvasContext: context,
-          viewport: viewport
-        }
-        await page.render(renderContext).promise
-        console.log('Page rendered')
-        */
 
         window.editor.layout()
         window.terminal.fit()
-        open_in_viewer(pdf_helloworld, 'helloworld.pdf');
+        window.shell.open('helloworld.pdf', atob(document.getElementById('helloworld').innerHTML));
 
         window.onresize = () =>
         {
