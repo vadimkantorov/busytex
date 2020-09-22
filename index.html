@@ -9,35 +9,55 @@
       href="https://unpkg.com/xterm@3.8.0/dist/xterm.css"
     />
     <style>
+        body {
+            height: 100vh;
+            padding: 0; 
+            margin: 0;
+        }
 
         #fileupload {
-            display:none
+            display: none;
+        }
+
+        #viewer {
+            width: 50%;
+        }
+
+        #editor {
+            width: 50%; 
+            border: 1px solid grey;
+        }
+
+        #terminal {
+            width: 100%; 
+            height: 70%;
+        }
+
+        #status {
+            width: 100%;
+            height: 30%;
+            padding: 5px;
+            margin: 0;
+            resize: none;
+            box-sizing: border-box;
         }
     </style>
   </head>
-  <body style="height: 100vh; padding: 0; margin: 0">
+  <body>
     <div style="display: flex; height: 50%">
-      <div id="editor" style="width: 50%; border: 1px solid grey"></div>
-      <div id="viewer" style="width: 50%">
+      <div id="editor"></div>
+      <div id="viewer">
         <canvas id="pdfcanvas"></canvas>
         <img hidden id="imgcanvas"></img>
       </div>
     </div>
     <div style="display: flex; flex-direction: column; height: 50%">
-      <div id="terminal" style="width: 100%; height: 70%"></div>
+      <div id="terminal"></div>
       <textarea
         name="status"
         id="status"
         cols="1"
         rows="1"
-        style="
-          width: 100%;
-          height: 30%;
-          padding: 5px;
-          margin: 0;
-          resize: none;
-          box-sizing: border-box;
-        "
       ></textarea>
       <input type="file" id="fileupload">
     </div>
