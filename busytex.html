@@ -57,15 +57,14 @@ function copytree(file_path, src_FS, dst_FS)
     }
 }
 
-async function run_busytex(arguments_array, init_fs, wasm)
+async function run_busytex(arguments_array, init_fs, wasm_module)
 {
     const Module =
     {
-        //https://github.com/emscripten-core/emscripten/blob/2bca083cbbd5a4133db61fbd74d04f7feecfa907/tests/manual_wasm_instantiate.html#L170
-        //https://emscripten.org/docs/api_reference/module.html#Module.instantiateWasm
         instantiateWasm(imports, successCallback)
         {
-            WebAssembly.instantiate(wasm, imports).then(inst => successCallback(inst.instance));
+            //WebAssembly.instantiate(wasm_module, imports).then(inst => successCallback(inst.instance));
+            WebAssembly.instantiate(wasm_module, imports).then(successCallback);
         },
         
         noInitialRun : true,
@@ -169,7 +168,8 @@ async function compile()
     };
     
     const resp = await fetch(wasm_busytex);
-    const wasm = new Uint8Array(await resp.arrayBuffer());
+    const wasm = await WebAssembly.compileStreaming(resp);
+    //const wasm = new Uint8Array(await resp.arrayBuffer());
 
     let [_FS_, exit_code] = await run_busytex([cmd_xetex, cmd_bibtex8], init_project, wasm);
     
