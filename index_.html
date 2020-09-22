@@ -39,7 +39,7 @@
           box-sizing: border-box;
         "
       ></textarea>
-      <input type="file" id="fileupload" onchange="load_file()">
+      <input type="file" id="fileupload">
     </div>
 
     <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
@@ -563,12 +563,10 @@
         let context = canvas.getContext('2d')
         canvas.height = viewport.height
         canvas.width = viewport.width
-
         var renderContext = {
           canvasContext: context,
           viewport: viewport
         }
-
         await page.render(renderContext).promise
         console.log('Page rendered')
 
