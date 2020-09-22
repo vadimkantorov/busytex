@@ -63,7 +63,6 @@ async function run_busytex(arguments_array, init_fs, wasm_module)
     {
         instantiateWasm(imports, successCallback)
         {
-            //WebAssembly.instantiate(wasm_module, imports).then(inst => successCallback(inst.instance));
             WebAssembly.instantiate(wasm_module, imports).then(successCallback);
         },
         
@@ -169,7 +168,6 @@ async function compile()
     
     const resp = await fetch(wasm_busytex);
     const wasm = await WebAssembly.compileStreaming(resp);
-    //const wasm = new Uint8Array(await resp.arrayBuffer());
 
     let [_FS_, exit_code] = await run_busytex([cmd_xetex, cmd_bibtex8], init_project, wasm);
     
