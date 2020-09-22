@@ -41,13 +41,19 @@
             resize: none;
             box-sizing: border-box;
         }
+
+        #pdfpreview {
+            width: 99%;
+            height: 100%;
+        }
     </style>
   </head>
   <body>
     <div style="display: flex; height: 50%">
       <div id="editor"></div>
       <div id="viewer">
-        <canvas id="pdfcanvas"></canvas>
+        <iframe id="pdfpreview"></iframe>
+        <canvas hidden id="pdfcanvas"></canvas>
         <img hidden id="imgcanvas"></img>
       </div>
     </div>
@@ -381,22 +387,24 @@
     
     function open_in_viewer(contents, file_path)
     {
-        const imgcanvas = document.getElementById('imgcanvas'), pdfcanvas = document.getElementById('pdfcanvas');
+        const imgcanvas = document.getElementById('imgcanvas'), pdfcanvas = document.getElementById('pdfcanvas'), pdfpreview = document.getElementById('pdfpreview');
         if(file_path.endsWith('.svg'))
         {
-            [imgcanvas.hidden, pdfcanvas.hidden] = [false, true];
+            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [false, true, true];
             imgcanvas.src = 'data:image/svg+xml;base64,' + btoa(String.fromCharCode.apply(null, contents));
         }
         else if(file_path.endsWith('.png') || file_path.endsWith('.jpg'))
         {
-            [imgcanvas.hidden, pdfcanvas.hidden] = [false, true];
+            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [false, true, true];
             const ext = file_path.endsWith('.png') ? 'png' : 'jpg';
             imgcanvas.src = `data:image/${ext};base64,` + btoa(String.fromCharCode.apply(null, contents));
         }
         else if(file_path.endsWith('.pdf'))
         {
-            //document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
-            [imgcanvas.hidden, pdfcanvas.hidden] = [true, false];
+            document.getElementById('pdfpreview').src = URL.createObjectURL(new Blob([contents], {type: 'application/pdf'}));
+            [imgcanvas.hidden, pdfcanvas.hidden, pdfpreview.hidden] = [true, true, false];
+            
+            /*
             var loadingTask = window.pdf.getDocument({data: contents}).promise.then(function(pdf) {
                 console.log('PDF loaded');
 
@@ -426,6 +434,7 @@
             }, function(reason) {
                 console.error(reason);
             });
+            */
         }
     }
 
@@ -552,9 +561,10 @@
         'vs/editor/editor.main',
         'xterm/xterm',
         'xterm/addons/fit/fit',
-        'pdfjs-dist/build/pdf',
-        './dist/emscriptenfs'
-      ], async function (editor, Terminal, fit, pdfjsLib, emscriptenfs) {
+        './dist/emscriptenfs',
+        './dist/busytex.js'
+        //'pdfjs-dist/build/pdf'
+      ], async function (editor, Terminal, fit, emscriptenfs) {
 
         window.editor = editor.editor.create(document.getElementById('editor'), {
           theme: 'vs-dark'
@@ -570,14 +580,15 @@
         const Module = await emscriptenfs(modularized_module(null, () =>  {}));
         window.FS = Module.FS;
         window.FS.chdir('/home/web_user') 
-        await new Shell(window.FS, window.terminal, window.terminal.println).onload();
+        const shell = new Shell(window.FS, window.terminal, window.terminal.println);
+        await shell.onload();
         window.terminal.prompt();
 
+        const pdf_helloworld = atob(document.getElementById('helloworld').innerHTML);
+        /*
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://mozilla.github.io/pdf.js/build/pdf.worker.js'
-
-        let pdf = await pdfjsLib.getDocument({ data: atob(document.getElementById('helloworld').innerHTML) }).promise
+        let pdf = await pdfjsLib.getDocument({ data: pdf_helloworld }).promise
         let page = await pdf.getPage(1)
-
         const scale = 1.5
         let viewport = page.getViewport({ scale: scale })
         let canvas = document.getElementById('pdfcanvas')
@@ -590,16 +601,17 @@
         }
         await page.render(renderContext).promise
         console.log('Page rendered')
+        */
 
         window.editor.layout()
         window.terminal.fit()
+        open_in_viewer(pdf_helloworld, 'helloworld.pdf');
 
-        window.onresize = () => {
-          window.editor.layout()
-          window.terminal.fit()
-
-          console.log('resized')
-        }
+        window.onresize = () =>
+        {
+            window.editor.layout()
+            window.terminal.fit()
+        };
       })
     </script>
   </body>
