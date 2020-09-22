@@ -47,10 +47,6 @@ export FONTCONFIG_FILE=texlive.conf
 export TEXMFCNF=./dist/texmf.cnf
 export TEXMFDIST=./dist/texlive/texmf-dist
 
-# node version
-build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
-build/native/busytex dvipdfmx example.xdv
-
 ### native versions 
 build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
 build/native/busytex dvipdfmx example.xdv
