@@ -55,7 +55,7 @@ function copytree(file_path, src_FS, dst_FS)
     }
 }
 
-async function run_busytex(arguments, init_fs)
+async function run_busytex(arguments_array, init_fs)
 {
     const Module =
     {
@@ -111,8 +111,12 @@ async function run_busytex(arguments, init_fs)
     };
     
     const Module_ = await busytex(Module);
-    const exit_code = Module_.callMain(arguments);
-    Module_.setStatus(`EXIT_CODE: ${exit_code}`);
+    let exit_code = 0;
+    for(const arguments of arguments_array)
+    {
+        exit_code = NOCLEANUP_callMain(Module_, arguments);
+        Module_.setStatus(`EXIT_CODE: ${exit_code}`);
+    }
     return [Module_.FS, exit_code];
 }
 
@@ -155,7 +159,7 @@ async function compile()
         FS.chdir(project);
     };
     
-    let [_FS_, exit_code] = await run_busytex(cmd_xetex, init_project);
+    let [_FS_, exit_code] = await run_busytex([cmd_xetex, cmd_bibtex8], init_project);
     
     const copy_project = FS =>
     {
@@ -163,14 +167,10 @@ async function compile()
         FS.chdir(project);
     };
     
-    [_FS_, exit_code] = await run_busytex(cmd_bibtex8, copy_project);
-
-    [_FS_, exit_code] = await run_busytex(cmd_xetex, copy_project);
+    [_FS_, exit_code] = await run_busytex([cmd_xetex], copy_project);
     
-    [_FS_, exit_code] = await run_busytex(cmd_xetex, copy_project);
+    [_FS_, exit_code] = await run_busytex([cmd_xetex, cmd_xdvipdfmx], copy_project);
 
-    [_FS_, exit_code] = await run_busytex(cmd_xdvipdfmx, copy_project);    
-    
     const pdf = _FS_.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
     document.getElementById('preview').src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
 }

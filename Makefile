@@ -266,7 +266,7 @@ build/texmf.cnf: build/texlive/texmf-dist
 ################################################################################################################
 
 build/wasm/busytex.js:
-	emcc -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=1 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1  -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' --pre-js build/wasm/texlive.js -o $@ -g -O2 -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+	emcc -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1  -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' --pre-js build/wasm/texlive.js -o $@ -g -O2 -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
