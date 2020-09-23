@@ -1,11 +1,13 @@
-importScripts('/busytex.pipeline.js')
+importScripts('/busytex.pipeline.js');
 importScripts('/dist/busytex.js');
 
-//pipeline = BusytexPipeline()
+print = msg => postMessage({log : msg});
+
+pipeline = new BusytexPipeline('/dist/busytex.wasm', print);
 
 onmessage = async evt =>
 {
     const {tex, bib} = evt.data;
-    const pdf = await compile(tex, bib, msg => postMessage({log : msg}));
+    const pdf = await pipeline.compile(tex, bib, );
     postMessage({pdf : pdf});
 }

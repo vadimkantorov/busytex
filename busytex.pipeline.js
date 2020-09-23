@@ -13,7 +13,7 @@ const tex_path = project + '/example.tex';
 const bib_path = project + '/example.bib';
 const aux_path = project + '/example.aux';
 
-function copytree(file_path, src_FS, dst_FS)
+const copytree = (file_path, src_FS, dst_FS) =>
 {
     dst_FS.mkdir(file_path);
     const files = src_FS.lookupPath(file_path).node.contents;
@@ -28,75 +28,8 @@ function copytree(file_path, src_FS, dst_FS)
     }
 }
 
-async function run_busytex(wasm_module, arguments_array, print, init_fs)
-{
-    const Module =
-    {
-        instantiateWasm(imports, successCallback)
-        {
-            WebAssembly.instantiate(wasm_module, imports).then(successCallback);
-        },
-        
-        noInitialRun : true,
 
-        locateFile(remote_package_name)
-        {
-            return '/dist/' + remote_package_name
-        },
-
-        thisProgram : bin_busytex,
-
-        preRun : [() =>
-        {
-            const ENV = Module.ENV, FS = Module.FS;
-            ENV.TEXMFDIST = dir_texmfdist;
-            ENV.FONTCONFIG_PATH = dir_fontconfig;
-            ENV.FONTCONFIG_FILE = conf_fontconfig;
-            init_fs(FS);
-        }],
-        
-        print(text) 
-        {
-            Module.setStatus(Module.prefix + ' | stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
-        },
-
-        printErr(text)
-        {
-            Module.setStatus(Module.prefix + ' | stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
-        },
-        
-        setPrefix(text)
-        {
-            this.prefix = text;
-        },
-        
-        setStatus(text)
-        {
-            print((this.statusPrefix || '') + text);
-        },
-        
-        monitorRunDependencies(left)
-        {
-            this.totalDependencies = Math.max(this.totalDependencies, left);
-            Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
-        },
-        
-        totalDependencies: 0,
-        
-        prefix : ""
-    };
-    
-    const Module_ = await busytex(Module);
-    let exit_code = 0;
-    for(const arguments of arguments_array)
-    {
-        exit_code = NOCLEANUP_callMain(Module_, arguments, print);
-        Module_.setStatus(`EXIT_CODE: ${exit_code}`);
-    }
-    return [Module_.FS, exit_code];
-}
-
-function NOCLEANUP_callMain(Module, args, print)
+const NOCLEANUP_callMain = (Module, args, print) =>
 {
 	Module.setPrefix(args[0]);
     const entryFunction = Module['_main'];
@@ -120,50 +53,120 @@ function NOCLEANUP_callMain(Module, args, print)
     return 0;
 }
 
-const wasm_module = fetch(wasm_busytex).then(WebAssembly.compileStreaming);
-
-async function compile(tex, bib, print)
+class BusytexPipeline
 {
-    const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path];
-    const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', 'example'];
-    const cmd_xdvipdfmx = ['xdvipdfmx', tex_path.replace('.tex', '.xdv')];
-
-    //const resp = await fetch(wasm_busytex);
-    //const wasm = await WebAssembly.compileStreaming(resp);
-    
-    const wasm = await wasm_module;
-    
-    let [_FS_, exit_code] = [null, 0]
-    
-    const init_project = FS =>
+    constructor(wasm_buystex, print)
     {
-        FS.mkdir(project);
-        FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
+        this.wasm_module = fetch(wasm_busytex).then(WebAssembly.compileStreaming);
+        this.print = print;
+    }
+
+    async run(arguments_array, init_fs)
+    {
+        const wasm_module = await this.wasm_module, print = this.print;
+        const Module =
+        {
+            instantiateWasm(imports, successCallback)
+            {
+                WebAssembly.instantiate(wasm_module, imports).then(successCallback);
+            },
+            
+            noInitialRun : true,
+
+            locateFile(remote_package_name)
+            {
+                return '/dist/' + remote_package_name
+            },
+
+            thisProgram : bin_busytex,
+
+            preRun : [() =>
+            {
+                const ENV = Module.ENV, FS = Module.FS;
+                ENV.TEXMFDIST = dir_texmfdist;
+                ENV.FONTCONFIG_PATH = dir_fontconfig;
+                ENV.FONTCONFIG_FILE = conf_fontconfig;
+                init_fs(FS);
+            }],
+            
+            print(text) 
+            {
+                Module.setStatus(Module.prefix + ' | stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+            },
+
+            printErr(text)
+            {
+                Module.setStatus(Module.prefix + ' | stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+            },
+            
+            setPrefix(text)
+            {
+                this.prefix = text;
+            },
+            
+            setStatus(text)
+            {
+                print((this.statusPrefix || '') + text);
+            },
+            
+            monitorRunDependencies(left)
+            {
+                this.totalDependencies = Math.max(this.totalDependencies, left);
+                Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+            },
+            
+            totalDependencies: 0,
+            
+            prefix : ""
+        };
+        
+        const Module_ = await busytex(Module);
+        let exit_code = 0;
+        for(const arguments of arguments_array)
+        {
+            exit_code = NOCLEANUP_callMain(Module_, arguments, print);
+            Module_.setStatus(`EXIT_CODE: ${exit_code}`);
+        }
+        return [Module_.FS, exit_code];
+    }
+
+    async compile(tex, bib, print)
+    {
+        const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt=' + fmt_latex, tex_path];
+        const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', 'example'];
+        const cmd_xdvipdfmx = ['xdvipdfmx', tex_path.replace('.tex', '.xdv')];
+
+        
+        let [_FS_, exit_code] = [null, 0]
+        
+        const init_project = FS =>
+        {
+            FS.mkdir(project);
+            FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
+            if(bib != null)
+                FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
+            FS.chdir(project);
+        };
+
+        const copy_project = FS =>
+        {
+            copytree(project, _FS_, FS);
+            FS.chdir(project);
+        };
+        
         if(bib != null)
-            FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
-        FS.chdir(project);
-    };
+        {
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], init_project);
+            [_FS_, exit_code] = await this.run([cmd_xetex], copy_project);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], copy_project);
+        }
+        else
+        {
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], init_project);
+        }
 
-    const copy_project = FS =>
-    {
-        copytree(project, _FS_, FS);
-        FS.chdir(project);
-    };
-    
-    if(bib != null)
-    {
-        [_FS_, exit_code] = await run_busytex(wasm, [cmd_xetex, cmd_bibtex8], print, init_project);
+        const pdf = _FS_.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
         
-        [_FS_, exit_code] = await run_busytex(wasm, [cmd_xetex], print, copy_project);
-        
-        [_FS_, exit_code] = await run_busytex(wasm, [cmd_xetex, cmd_xdvipdfmx], print, copy_project);
+        return pdf;
     }
-    else
-    {
-        [_FS_, exit_code] = await run_busytex(wasm, [cmd_xetex, cmd_xdvipdfmx], print, init_project);
-    }
-
-    const pdf = _FS_.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
-    
-    return pdf;
 }
