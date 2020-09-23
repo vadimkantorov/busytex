@@ -1,9 +1,9 @@
 <html><head><title>busytex example</title></head><body style="width: 100%; height: 100%; overflow: hidden">
 <div style="width: 98%; height: 5%;" >
-<input type="checkbox" id="use_worker" name="use_worker"checked>
-<label for="use_worker">Use worker</label>
-<span id="time_elapsed" name="time_elapsed" style="float:right">0.00 sec</span>
-<label for="time_elapsed" style="float:right">Time elapsed:</label>
+<input type="checkbox" id="worker" name="worker"checked>
+<label for="worker">Use Worker</label>
+<span id="elapsed" name="time_elapsed" style="float:right">0.00 sec</span>
+<label for="elapsed" style="float:right">Time elapsed:</label>
 </div>
 <div><iframe style="width: 98%; height:25%" id="preview"></iframe></div>
 
@@ -32,60 +32,79 @@ Blablabla said Nobody ~\cite{Nobody06}.
 
 <script>
 
-tic = 0;
-
-if(document.getElementById('use_worker').checked)
-{
-    worker = new Worker('/busytex.worker.js');
-}
-else
-{
-    worker = 
-    {
-        pipeline : new Promise(function (resolve, reject)
-        {
-            let s = document.createElement('script');
-            s.src = '/busytex.pipeline.js';
-            s.onload = resolve;
-            s.onerror = reject;
-            self.document.head.appendChild(s);
-        }).then(_ => Promise.resolve(new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', msg => worker.onmessage({data: {log : msg}}), BusytexDefaultLoader))),
-        
-        async postMessage(tex_bib)
-        {
-            const pipeline = await worker.pipeline;
-            const pdf = await pipeline.compile(tex_bib.tex, tex_bib.bib);
-            worker.onmessage({data : {pdf : pdf}});
-        }
-    }
-}
-
-worker.onmessage = e =>
-{
-    const {pdf, log} = e.data;
-    if(pdf)
-    {
-        let previewElement = document.getElementById('preview');
-        previewElement.src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
-
-        let elapsedElement = document.getElementById('time_elapsed');
-        elapsedElement.innerText = ((performance.now() - tic) / 1000).toFixed(2) + ' sec';
-    }
-
-    if(log)
-    {
-        let statusElement = document.getElementById('status');
-        statusElement.value += log;
-        statusElement.value += '\n';
-        statusElement.scrollTop = statusElement.scrollHeight;
-    }
-}
+const busytex_wasm = '/dist/busytex.wasm', busytex_js = '/dist/busytex.js';
+const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
 
 async function onclick_()
 {
+    let tic = 0;
+    let worker = null;
+
+    if(document.getElementById('worker').checked)
+    {
+        worker = new Worker(busytex_worker_js);
+    }
+    else
+    {
+        worker = 
+        {
+            async postMessage({files, main_tex_path, bibtex, busytex_js, busytex_wasm})
+            {
+                if(busytex_js && busytex_wasm)
+                {
+                    this.pipeline = new Promise(function (resolve, reject)
+                    {
+                        let s = document.createElement('script');
+                        s.src = busytex_pipeline_js;
+                        s.onload = resolve;
+                        s.onerror = reject;
+                        self.document.head.appendChild(s);
+                    }).then(_ => Promise.resolve(new BusytexPipeline(busytex_js, busytex_wasm, msg => this.onmessage({data: {log : msg}}), BusytexDefaultScriptLoader)));
+                }
+
+                else if(files && this.pipeline)
+                {
+                    const pipeline = await this.pipeline;
+                    const pdf = await pipeline.compile(files, main_tex_path, bibtex);
+                    this.onmessage({data : {pdf : pdf}});
+                }
+            },
+
+            terminate()
+            {
+                this.onmessage({data : {log : 'Terminating dummy worker'}});
+            }
+        }
+    }
+
+    worker.onmessage = e =>
+    {
+        const {pdf, log} = e.data;
+        if(pdf)
+        {
+            let previewElement = document.getElementById('preview');
+            previewElement.src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
+
+            let elapsedElement = document.getElementById('elapsed');
+            elapsedElement.innerText = ((performance.now() - tic) / 1000).toFixed(2) + ' sec';
+
+            worker.terminate();
+        }
+
+        if(log)
+        {
+            let statusElement = document.getElementById('status');
+            statusElement.value += log;
+            statusElement.value += '\n';
+            statusElement.scrollTop = statusElement.scrollHeight;
+        }
+    }
+    worker.postMessage({busytex_wasm : busytex_wasm, busytex_js : busytex_js});
+
     tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
-    worker.postMessage({tex : tex, bib :bib})
+    const files = [{path : 'example.tex', contents : tex, type : 'f'}, {path : 'example.bib', contents : bib, type : 'f'}];
+    worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : true});
 }
 
 </script>

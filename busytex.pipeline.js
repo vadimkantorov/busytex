@@ -1,8 +1,8 @@
-function BusytexDefaultLoader(src)
+function BusytexDefaultScriptLoader(src)
 {
-    return new Promise(function (resolve, reject) {
-        var s;
-        s = self.document.createElement('script');
+    return new Promise(function (resolve, reject)
+    {
+        let s = self.document.createElement('script');
         s.src = src;
         s.onload = resolve;
         s.onerror = reject;
@@ -10,24 +10,25 @@ function BusytexDefaultLoader(src)
     });
 }
 
-function BusytexRequireLoader(src)
+function BusytexRequireScriptLoader(src)
 {
     return self.require(src);
 }
 
-function BusytexWorkerLoader(src)
+function BusytexWorkerScriptLoader(src)
 {
     return Promise.resolve(self.importScripts(src));
 }
 
 class BusytexPipeline
 {
-    constructor(busytex_wasm, busytex_js, print, script_loader)
+    constructor(busytex_js, busytex_wasm, print, script_loader)
     {
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
         this.em_module_promise = script_loader(busytex_js);
         this.print = print;
         
+        this.project = '/home/web_user/project';
         this.bin_busytex = '/bin/busytex';
         this.fmt_latex = '/latex.fmt';
         this.dir_texmfdist = '/texlive/texmf-dist:';
@@ -137,17 +138,14 @@ class BusytexPipeline
         return [Module_.FS, exit_code];
     }
 
-    async compile(tex, bib, print)
+    async compile(files, main_tex_path, bibtex)
     {
-        const project = '/home/web_user/example';
-        const tex_path = project + '/example.tex';
-        const bib_path = project + '/example.bib';
-        const aux_path = project + '/example.aux';
-    
-        const xdv_path = tex_path.replace('.tex', '.xdv');
+        const xdv_path = main_tex_path.replace('.tex', '.xdv');
+        const pdf_path = main_tex_path.replace('.tex', '.pdf');
+        const aux_path = main_tex_path.replace('.tex', '.aux');
 
-        const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
-        const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', 'example'];
+        const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, main_tex_path];
+        const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', aux_path];
         const cmd_xdvipdfmx = ['xdvipdfmx', xdv_path];
 
         let [_FS_, exit_code] = [null, 0]
@@ -169,20 +167,24 @@ class BusytexPipeline
         
         const init_project = FS =>
         {
-            FS.mkdir(project);
-            FS.writeFile(tex_path, tex, {encoding: 'utf-8'}); 
-            if(bib != null)
-                FS.writeFile(bib_path, bib, {encoding: 'utf-8'}); 
-            FS.chdir(project);
+            FS.mkdir(this.project);
+            for(const {path, type, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
+            {
+                if(type == 'd')
+                    FS.mkdir(this.project + '/' + path);
+                else
+                    FS.writeFile(this.project + '/' + path, contents);
+            }
+            FS.chdir(this.project);
         };
 
         const copy_project = FS =>
         {
-            copytree(project, _FS_, FS);
-            FS.chdir(project);
+            copytree(this.project, _FS_, FS);
+            FS.chdir(this.project);
         };
         
-        if(bib != null)
+        if(bibtex)
         {
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project);
             [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project);
@@ -193,8 +195,6 @@ class BusytexPipeline
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project);
         }
 
-        const pdf = _FS_.readFile(tex_path.replace('.tex', '.pdf'), {encoding: 'binary'});
-        
-        return pdf;
+        return _FS_.readFile(pdf_path, {encoding: 'binary'});
     }
 }

@@ -1,12 +1,9 @@
 importScripts('/busytex.pipeline.js');
 
-print = msg => postMessage({log : msg});
-
-pipeline = new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', print, BusytexWorkerLoader);
-
-onmessage = async evt =>
+onmessage = async ({data : {files, main_tex_path, bibtex, busytex_wasm, busytex_js}}) => 
 {
-    const {tex, bib} = evt.data;
-    const pdf = await pipeline.compile(tex, bib, );
-    postMessage({pdf : pdf});
-}
+    if(busytex_wasm && busytex_js)
+        pipeline = new BusytexPipeline(busytex_js, busytex_wasm, msg => postMessage({log : msg}), BusytexWorkerScriptLoader);
+    else if(files && pipeline)
+        postMessage({pdf : await pipeline.compile(files, main_tex_path, bibtex)})
+};
