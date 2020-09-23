@@ -1,9 +1,8 @@
 importScripts('/busytex.pipeline.js');
-importScripts('/dist/busytex.js');
 
 print = msg => postMessage({log : msg});
 
-pipeline = new BusytexPipeline('/dist/busytex.wasm', print);
+importScripts('/dist/busytex.js'); pipeline = new BusytexPipeline('/dist/busytex.wasm', print);
 
 onmessage = async evt =>
 {
