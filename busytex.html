@@ -1,6 +1,11 @@
 <html><head><title>busytex example</title></head><body style="width: 100%; height: 100%; overflow: hidden">
-
-<div><iframe style="width: 98%; height:30%" id="preview"></iframe></div>
+<div style="width: 98%; height: 5%;" >
+<input type="checkbox" id="use_worker" name="use_worker"checked>
+<label for="use_worker">Use worker</label>
+<span id="time_elapsed" name="time_elapsed" style="float:right">0.00 sec</span>
+<label for="time_elapsed" style="float:right">Time elapsed:</label>
+</div>
+<div><iframe style="width: 98%; height:25%" id="preview"></iframe></div>
 
 <div><textarea style="width: 98%; height: 25%" id="tex">
 \documentclass[11pt]{article}
@@ -27,8 +32,9 @@ Blablabla said Nobody ~\cite{Nobody06}.
 
 <script>
 
-const use_worker = true;
-if(use_worker)
+tic = 0;
+
+if(document.getElementById('use_worker').checked)
 {
     worker = new Worker('/busytex.worker.js');
 }
@@ -61,6 +67,9 @@ worker.onmessage = e =>
     {
         let previewElement = document.getElementById('preview');
         previewElement.src = URL.createObjectURL(new Blob([pdf], {type: 'application/pdf'}));
+
+        let elapsedElement = document.getElementById('time_elapsed');
+        elapsedElement.innerText = ((performance.now() - tic) / 1000).toFixed(2) + ' sec';
     }
 
     if(log)
@@ -74,6 +83,7 @@ worker.onmessage = e =>
 
 async function onclick_()
 {
+    tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
     worker.postMessage({tex : tex, bib :bib})
 }
