@@ -1,11 +1,31 @@
-const js_busytex = 'dist/busytex.js';
-const wasm_busytex = 'dist/busytex.wasm';
+function BusytexDefaultLoader(src)
+{
+    return new Promise(function (resolve, reject) {
+        var s;
+        s = self.document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        self.document.head.appendChild(s);
+    });
+}
+
+function BusytexRequireLoader(src)
+{
+    return self.require(src);
+}
+
+function BusytexWorkerLoader(src)
+{
+    return Promise.resolve(self.importScripts(src));
+}
 
 class BusytexPipeline
 {
-    constructor(buystex_wasm, print)
+    constructor(busytex_wasm, busytex_js, print, script_loader)
     {
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
+        this.em_module_promise = script_loader(busytex_js);
         this.print = print;
         
         this.bin_busytex = '/bin/busytex';
@@ -51,7 +71,9 @@ class BusytexPipeline
             return 0;
         }
 
-        const wasm_module = await this.wasm_module_promise, print = this.print;
+        const print = this.print;
+        const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
+
         const Module =
         {
             instantiateWasm(imports, successCallback)
@@ -70,8 +92,8 @@ class BusytexPipeline
 
             preRun : [() =>
             {
-                const ENV = Module.ENV, FS = Module.FS;
-                init_fs(FS);
+                init_env(Module.ENV);
+                init_fs(Module.FS);
             }],
             
             print(text) 
@@ -107,9 +129,9 @@ class BusytexPipeline
         
         const Module_ = await busytex(Module);
         let exit_code = 0;
-        for(const arguments of arguments_array)
+        for(const args of arguments_array)
         {
-            exit_code = NOCLEANUP_callMain(Module_, arguments, print);
+            exit_code = NOCLEANUP_callMain(Module_, args, print);
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
         }
         return [Module_.FS, exit_code];

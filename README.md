@@ -61,6 +61,8 @@ build/native/busytex dvipdfmx example.xdv
 6. fontconfig patch [1](https://github.com/Dador/JavascriptSubtitlesOctopus/blob/master/build/patches/fontconfig/0002-fix-fcstats-emscripten.patch) and [2](https://github.com/lyze/xetex-js/blob/master/fontconfig-fcstat.c.patch)
 
 ### Links
+https://github.com/Sable/emscripten_malloc
+
 https://github.com/dmonad/pdftex.js
 
 http://www.readytext.co.uk/?p=3590

@@ -2,7 +2,7 @@ importScripts('/busytex.pipeline.js');
 
 print = msg => postMessage({log : msg});
 
-importScripts('/dist/busytex.js'); pipeline = new BusytexPipeline('/dist/busytex.wasm', print);
+pipeline = new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', print, BusytexWorkerLoader);
 
 onmessage = async evt =>
 {

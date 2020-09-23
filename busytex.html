@@ -1,4 +1,4 @@
-<html><body style="width: 100%; height: 100%; overflow: hidden">
+<html><head><title>busytex example</title></head><body style="width: 100%; height: 100%; overflow: hidden">
 
 <div><iframe style="width: 98%; height:30%" id="preview"></iframe></div>
 
@@ -25,9 +25,34 @@ Blablabla said Nobody ~\cite{Nobody06}.
 <div><textarea style="width: 98%; height: 20%" id="status"></textarea></div>
 <div><button style="width: 98%; height: 10%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
 
+<!--<script src="/busytex.pipeline.js" type="text/javascript"></script>-->
+
 <script>
 
-worker = new Worker('/busytex.worker.js');
+const use_worker = false;
+if(use_worker)
+{
+    worker = new Worker('/busytex.worker.js');
+}
+else
+{
+    var s = document.createElement('script');
+    s.src = '/busytex.pipeline.js';
+    s.type = 'text/javascript';
+    s.async = false;
+    document.getElementsByTagName('head')[0].appendChild(s);
+    
+    pipeline = new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', msg => worker.onmessage({data: {log : msg}}), BusytexDefaultLoader);
+    worker = 
+    {
+        async postMessage(tex_bib)
+        {
+            const pdf = await pipeline.compile(tex_bib.tex, tex_bib.bib);
+            worker.onmessage({data : {pdf : pdf}});
+        }
+    }
+}
+
 worker.onmessage = e =>
 {
     const {pdf, log} = e.data;
@@ -40,12 +65,13 @@ worker.onmessage = e =>
     if(log)
     {
         let statusElement = document.getElementById('status');
-        statusElement.value += log + '\n';
+        statusElement.value += log;
+        statusElement.value += '\n';
         statusElement.scrollTop = statusElement.scrollHeight;
     }
 }
 
-function onclick_()
+async function onclick_()
 {
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
     worker.postMessage({tex : tex, bib :bib})
