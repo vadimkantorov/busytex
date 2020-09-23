@@ -36,17 +36,20 @@ if(use_worker)
 }
 else
 {
-    var s = document.createElement('script');
-    s.src = '/busytex.pipeline.js';
-    s.type = 'text/javascript';
-    s.async = false;
-    document.getElementsByTagName('head')[0].appendChild(s);
-    
-    pipeline = new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', msg => worker.onmessage({data: {log : msg}}), BusytexDefaultLoader);
     worker = 
     {
+        pipeline : new Promise(function (resolve, reject)
+        {
+            let s = document.createElement('script');
+            s.src = '/busytex.pipeline.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            self.document.head.appendChild(s);
+        }).then(_ => Promise.resolve(new BusytexPipeline('/dist/busytex.wasm', '/dist/busytex.js', msg => worker.onmessage({data: {log : msg}}), BusytexDefaultLoader))),
+        
         async postMessage(tex_bib)
         {
+            const pipeline = await worker.pipeline;
             const pdf = await pipeline.compile(tex_bib.tex, tex_bib.bib);
             worker.onmessage({data : {pdf : pdf}});
         }
