@@ -32,7 +32,7 @@ Blablabla said Nobody ~\cite{Nobody06}.
 
 <script>
 
-const busytex_wasm = '/dist/busytex.wasm', busytex_js = '/dist/busytex.js';
+const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm';
 const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
 
 async function onclick_()
@@ -103,7 +103,7 @@ async function onclick_()
 
     tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
-    const files = [{path : 'example.tex', contents : tex, type : 'f'}, {path : 'example.bib', contents : bib, type : 'f'}];
+    const files = [{path : 'example.tex', contents : tex}, {path : 'example.bib', contents : bib}];
     worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : true});
 }
 

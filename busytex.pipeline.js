@@ -1,6 +1,6 @@
 function BusytexDefaultScriptLoader(src)
 {
-    return new Promise(function (resolve, reject)
+    return new Promise((resolve, reject) =>
     {
         let s = self.document.createElement('script');
         s.src = src;
@@ -12,7 +12,7 @@ function BusytexDefaultScriptLoader(src)
 
 function BusytexRequireScriptLoader(src)
 {
-    return self.require(src);
+    return new Promise(resolve => self.require([src], resolve));
 }
 
 function BusytexWorkerScriptLoader(src)
@@ -28,7 +28,7 @@ class BusytexPipeline
         this.em_module_promise = script_loader(busytex_js);
         this.print = print;
         
-        this.project = '/home/web_user/project';
+        this.project_dir = '/home/web_user/project_dir';
         this.bin_busytex = '/bin/busytex';
         this.fmt_latex = '/latex.fmt';
         this.dir_texmfdist = '/texlive/texmf-dist:';
@@ -140,11 +140,16 @@ class BusytexPipeline
 
     async compile(files, main_tex_path, bibtex)
     {
-        const xdv_path = main_tex_path.replace('.tex', '.xdv');
-        const pdf_path = main_tex_path.replace('.tex', '.pdf');
-        const aux_path = main_tex_path.replace('.tex', '.aux');
+        const source_name = main_tex_path.slice(main_tex_path.lastIndexOf('/') + 1);
+        const dirname = main_tex_path.slice(0, main_tex_path.length - source_name.length) || '.';
+        const source_dir = `${this.project_dir}/${dirname}`;
 
-        const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, main_tex_path];
+        const tex_path = source_name;
+        const xdv_path = source_name.replace('.tex', '.xdv');
+        const pdf_path = source_name.replace('.tex', '.pdf');
+        const aux_path = source_name.replace('.tex', '.aux');
+
+        const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
         const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', aux_path];
         const cmd_xdvipdfmx = ['xdvipdfmx', xdv_path];
 
@@ -165,34 +170,37 @@ class BusytexPipeline
             }
         }
         
-        const init_project = FS =>
+        const init_project_dir = FS =>
         {
-            FS.mkdir(this.project);
-            for(const {path, type, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
+            FS.mkdir(this.project_dir);
+            for(const {path, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
             {
-                if(type == 'd')
-                    FS.mkdir(this.project + '/' + path);
+                const absolute_path = `${this.project_dir}/${path}`;
+                console.log(main_tex_path, absolute_path);
+                
+                if(contents == null)
+                    FS.mkdir(absolute_path);
                 else
-                    FS.writeFile(this.project + '/' + path, contents);
+                    FS.writeFile(absolute_path, contents);
             }
-            FS.chdir(this.project);
+            FS.chdir(source_dir);
         };
 
-        const copy_project = FS =>
+        const copy_project_dir = FS =>
         {
-            copytree(this.project, _FS_, FS);
-            FS.chdir(this.project);
+            copytree(this.project_dir, _FS_, FS);
+            FS.chdir(source_dir);
         };
         
         if(bibtex)
         {
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project);
-            [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project);
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir);
+            [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project_dir);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project_dir);
         }
         else
         {
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir);
         }
 
         return _FS_.readFile(pdf_path, {encoding: 'binary'});
