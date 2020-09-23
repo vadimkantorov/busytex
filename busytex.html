@@ -23,12 +23,11 @@ Blablabla said Nobody ~\cite{Nobody06}.
 </textarea></div>
 
 <div><textarea style="width: 98%; height: 20%" id="status"></textarea></div>
-<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
+<div><button style="width: 98%; height: 10%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
 
 <script>
 
-
-worker = new Worker('/worker.js');
+worker = new Worker('/busytex.worker.js');
 worker.onmessage = e =>
 {
     const {pdf, log} = e.data;
