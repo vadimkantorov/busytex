@@ -2,6 +2,9 @@
 <div style="width: 98%; height: 5%;" >
 <input type="checkbox" id="worker" name="worker"checked>
 <label for="worker">Use Worker</label>
+<input type="checkbox" id="bibtex" name="bibtex"checked>
+<label for="bibtex">Run BibTeX</label>
+<button onclick="clearlog()">Clear Log</button>
 <span id="elapsed" name="time_elapsed" style="float:right">0.00 sec</span>
 <label for="elapsed" style="float:right">Time elapsed:</label>
 </div>
@@ -28,7 +31,7 @@ Blablabla said Nobody ~\cite{Nobody06}.
 </textarea></div>
 
 <div><textarea style="width: 98%; height: 20%" id="status"></textarea></div>
-<div><button style="width: 98%; height: 10%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
+<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
 
 <script>
 
@@ -40,7 +43,8 @@ async function onclick_()
     let tic = 0;
     let worker = null;
 
-    if(document.getElementById('worker').checked)
+    const use_worker = document.getElementById('worker').checked, use_bibtex = document.getElementById('bibtex').checked;
+    if(use_worker)
     {
         worker = new Worker(busytex_worker_js);
     }
@@ -104,7 +108,12 @@ async function onclick_()
     tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
     const files = [{path : 'example.tex', contents : tex}, {path : 'example.bib', contents : bib}];
-    worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : true});
+    worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : use_bibtex});
+}
+
+function clearlog()
+{
+    document.getElementById('status').value = '';
 }
 
 </script>

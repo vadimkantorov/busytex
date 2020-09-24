@@ -176,7 +176,6 @@ class BusytexPipeline
             for(const {path, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
             {
                 const absolute_path = `${this.project_dir}/${path}`;
-                console.log(main_tex_path, absolute_path);
                 
                 if(contents == null)
                     FS.mkdir(absolute_path);

@@ -221,6 +221,19 @@
                 this.github_https_path = 'https://github.com' + this.github_https_path.slice(1);
             
             this.guthub = new Guthub(this.FS, self.github_auth_token, println);
+            this.tic_ = 0;
+            this.pdf_path = '';
+        }
+
+        tic()
+        {
+            this.tic_ = performance.now();
+        }
+
+        toc()
+        {
+            const elapsed = (performance.now() - this.tic_) / 1000.0;
+            window.println(`Elapsed time: ${elapsed.toFixed(2)} sec`);
         }
 
         async onload()
@@ -302,6 +315,8 @@
 
         async latexmk(tex_path, bibtex)
         {
+            this.println('Running in background...');
+            this.tic();
             const traverse = (root, relative_dir_path) =>
             {
                 let entries = [];
@@ -328,9 +343,11 @@
             const main_tex_path = source_path.slice(project_dir.length + 1);
 
             const files = traverse(project_dir, '.');
-            const pdf = await this.compiler.compile(files, main_tex_path, bibtex);
-            this.FS.writeFile(pdf_path, pdf);
-            this.open(pdf_path, pdf);
+            //const pdf = await this.compiler.compile(files, main_tex_path, bibtex);
+            this.pdf_path = pdf_path;
+            this.compiler.postMessage({files : files, main_tex_path : main_tex_path, bibtex : bibtex});
+            //this.FS.writeFile(pdf_path, pdf);
+            //this.open(pdf_path, pdf);
         }
 
         async upload(file_path)
@@ -526,21 +543,42 @@
         const Module = await emscriptenfs(modularized_module(null, () =>  {}, window.println));
         window.FS = Module.FS;
         window.FS.chdir('/home/web_user')
+
         const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm';
-        window.compiler = new BusytexPipeline(busytex_js, busytex_wasm, window.println, BusytexDefaultScriptLoader);
+        const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
+        
+        //window.compiler = new BusytexPipeline(busytex_js, busytex_wasm, window.println, BusytexDefaultScriptLoader);
+        window.compiler = new Worker(busytex_worker_js);
+        window.compiler.onmessage = e =>
+        {
+            const {pdf, log} = e.data;
+            if(pdf)
+            {
+                window.shell.toc();
+                shell.FS.writeFile(shell.pdf_path, pdf);
+                shell.open(shell.pdf_path, pdf);
+            }
+            else if(log)
+            {
+                window.println(log);
+            }
+        }
+        window.compiler.postMessage({busytex_js : busytex_js, busytex_wasm : busytex_wasm});
+              
         window.shell = new Shell(window.FS, window.terminal, window.compiler, window.terminal.println);
-        await window.shell.onload();
-        window.terminal.prompt();
 
         window.editor.layout()
         window.terminal.fit()
-        window.shell.open('helloworld.pdf', atob(document.getElementById('helloworld').innerHTML));
-
         window.onresize = () =>
         {
             window.editor.layout()
             window.terminal.fit()
         };
+        
+        window.shell.open('helloworld.pdf', atob(document.getElementById('helloworld').innerHTML));
+        
+        await window.shell.onload();
+        window.terminal.prompt();
       })
     </script>
   </body>
