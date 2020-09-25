@@ -1,8 +1,6 @@
-#TODO: cnf
-#TODO: all schemes
+#TODO: disable pre-js to enable dynamic choosing of TexLive distro
 #TODO: disable all pkgs
 #TODO: custom binaries for install-tl
-		
 
 # $@ is lhs
 # $< is rhs
@@ -206,9 +204,8 @@ build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
 	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
 build/wasm/texlive/texk/bibtex-x/bibtex8.a: build/wasm/texlive.configured
-	#TODO: set CSFINPUT=/bibtex
 	$(MAKE_wasm) -C $(dir $@) clean
-	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_bibtex)
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_bibtex) CSFINPUT=/bibtex
 	$(AR_wasm) -crs $@ $(dir $@)/bibtex8-*.o
 
 build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
@@ -256,24 +253,21 @@ build/format-%/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive-%/
 	rm $(dir $@)/* || true
 	wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
 	unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
-	TEXMFCNF=$(ROOT) TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
+	TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
 	touch hyphen.cfg 
-	TEXMFCNF=$(ROOT) TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
+	TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
 
-build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/fontconfig/texlive.conf build/texmf-%.cnf
+build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/fontconfig/texlive.conf 
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
 	python3 $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --lz4 --use-preload-cache \
 		--preload build/empty@/bin/busytex \
 		--preload build/fontconfig/texlive.conf@/fontconfig/texlive.conf \
-		--preload build/texmf-$*.cnf@/texmf.cnf \
+		--preload build//texlive-$*/texmf-dist/web2c/texmf.cnf@/texmf.cnf \
 		--preload build/texlive-$*@/texlive \
 		--preload build/format-$*/latex.fmt@/latex.fmt \
 		--preload source/texlive/texk/bibtex-x/csf@/bibtex
-
-build/texmf-%.cnf: build/texlive-%/texmf-dist
-	cp $</web2c/texmf.cnf $@
 
 ################################################################################################################
 
@@ -315,25 +309,24 @@ tds-%:
 	make build/texlive-$*.profile
 	make build/texlive-$*/texmf-dist
 	make build/format-$*/latex.fmt
-	make build/texmf-$*.cnf
 	make build/fontconfig/texlive.conf
 	make build/wasm/texlive-$*.js
 
 .PHONY: wasm
 wasm:
-	make build/wasm/texlive.configured
-	make build/wasm/texlive/libs/libpng/libpng.a 
-	make build/wasm/texlive/libs/libpaper/libpaper.a 
-	make build/wasm/texlive/libs/zlib/libz.a 
-	make build/wasm/texlive/libs/teckit/libTECkit.a 
-	make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
-	make build/wasm/texlive/libs/graphite2/libgraphite2.a 
-	make build/wasm/texlive/libs/pplib/libpplib.a 
-	make build/wasm/texlive/libs/freetype2/libfreetype.a 
-	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
-	make build/wasm/expat/libexpat.a
-	make build/wasm/fontconfig/src/.libs/libfontconfig.a
+	#make build/wasm/texlive.configured
+	#make build/wasm/texlive/libs/libpng/libpng.a 
+	#make build/wasm/texlive/libs/libpaper/libpaper.a 
+	#make build/wasm/texlive/libs/zlib/libz.a 
+	#make build/wasm/texlive/libs/teckit/libTECkit.a 
+	#make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
+	#make build/wasm/texlive/libs/graphite2/libgraphite2.a 
+	#make build/wasm/texlive/libs/pplib/libpplib.a 
+	#make build/wasm/texlive/libs/freetype2/libfreetype.a 
+	#make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	#make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
+	#make build/wasm/expat/libexpat.a
+	#make build/wasm/fontconfig/src/.libs/libfontconfig.a
 	# busy binaries
 	make build/wasm/texlive/texk/bibtex-x/bibtex8.a
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
