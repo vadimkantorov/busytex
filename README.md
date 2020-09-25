@@ -24,7 +24,10 @@ make texlive
 make native
 
 # build TeX Directory Structure (TDS) and latex format file (latex.fmt)
-make tds
+# make tds-basic
+make tds-small
+# make tds-medium
+# make tds-full
 
 # build wasm tools
 make wasm
