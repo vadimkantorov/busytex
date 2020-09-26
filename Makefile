@@ -1,6 +1,7 @@
 #TODO: config.site instead of configure cache
 #TODO: native busytex
 #TODO: CSFINPUT/fontconfig.conf - do sth about native version
+#TODO: abspath/realpath instead of ROOT
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
@@ -153,23 +154,23 @@ build/%/texlive.configured: source/texlive.patched
 	  --with-banner-add="_busytex$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"	     	\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)"           \
-	  CXXFLAGS="$(CFLAGS_$*_texlive)" &&        \
-	$(MAKE_$*) 
+	  CXXFLAGS="$(CFLAGS_$*_texlive)"
+	$(MAKE_$*) -C $(basename $@)
 	touch $@
 
 build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a : build/wasm/texlive.configured build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata
 	cd build/wasm/texlive/libs/icu && \
-	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure) && \
-	$(MAKE_wasm) $(OPTS_wasm_icu_make) && \
-	echo "$(SKIP)" > icu-build/test/Makefile && \
-	$(MAKE_wasm) -C icu-build $(OPTS_wasm_icu_make) 
+	$(CONFIGURE_wasm) $(ROOT)/source/texlive/libs/icu/configure $(OPTS_wasm_icu_configure)
+	$(MAKE_wasm) -C build/wasm/texlive/libs/icu $(OPTS_wasm_icu_make) 
+	echo "$(SKIP)" > build/wasm/texlive/libs/icu/icu-build/test/Makefile
+	$(MAKE_wasm) -C build/wasm/texlive/libs/icu/icu-build $(OPTS_wasm_icu_make) 
 
 build/native/texlive/libs/icu/icu-build/lib/libicuuc.a build/native/texlive/libs/icu/icu-build/lib/libicudata.a build/native/texlive/libs/icu/icu-build/bin/icupkg build/native/texlive/libs/icu/icu-build/bin/pkgdata : build/native/texlive.configured
 	$(MAKE_native) -C build/native/texlive/libs/icu 
 	$(MAKE_native) -C build/native/texlive/libs/icu/icu-build 
 
 build/wasm/texlive/libs/freetype2/libfreetype.a: build/wasm/texlive.configured build/native/texlive/libs/freetype2/libfreetype.a
-	cd $(dir $@) && $(MAKE_wasm) $(OPTS_wasm_freetype2)
+	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_freetype2)
 
 build/%/texlive/libs/teckit/libTECkit.a build/%/texlive/libs/harfbuzz/libharfbuzz.a build/%/texlive/libs/graphite2/libgraphite2.a build/%/texlive/libs/libpng/libpng.a build/%/texlive/libs/libpaper/libpaper.a build/%/texlive/libs/zlib/libz.a build/%/texlive/libs/pplib/libpplib.a build/%/texlive/libs/freetype2/libfreetype.a: build/%/texlive build/%/texlive.configured
 	$(MAKE_$*) -C $(dir $@)  
@@ -199,8 +200,8 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 	   --disable-docs \
 	   --with-expat-includes="$(ROOT)/source/expat/lib" \
 	   --with-expat-lib="$(ROOT)/build/$*/expat" \
-	   CFLAGS="$(CFLAGS_$*_fontconfig) $(CFLAGS_OPT)" FREETYPE_CFLAGS="$(CFLAGS_$*_fontconfig_FREETYPE)" FREETYPE_LIBS="$(LIBS_$*_fontconfig_FREETYPE)" && \
-	$(MAKE_$*)  
+	   CFLAGS="$(CFLAGS_$*_fontconfig) $(CFLAGS_OPT)" FREETYPE_CFLAGS="$(CFLAGS_$*_fontconfig_FREETYPE)" FREETYPE_LIBS="$(LIBS_$*_fontconfig_FREETYPE)"
+	$(MAKE_$*) -C build/$*/fontconfig
 
 ################################################################################################################
 
