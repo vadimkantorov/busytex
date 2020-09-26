@@ -105,9 +105,15 @@ async function onclick_()
         if(log)
         {
             let statusElement = document.getElementById('status');
-            statusElement.value += log;
-            statusElement.value += '\n';
-            statusElement.scrollTop = statusElement.scrollHeight;
+            const ansi_reset_sequence = '\x1bc';
+            if(log == ansi_reset_sequence)
+                statusElement.value = '';
+            else
+            {
+                statusElement.value += log;
+                statusElement.value += '\n';
+                statusElement.scrollTop = statusElement.scrollHeight;
+            }
         }
     }
     worker.postMessage({busytex_wasm : busytex_wasm, busytex_js : busytex_js, texlive_js : texlive_js});

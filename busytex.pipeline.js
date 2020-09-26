@@ -203,6 +203,9 @@ class BusytexPipeline
             FS.chdir(source_dir);
         };
         
+        const ansi_reset_sequence = '\x1bc';
+        this.print(ansi_reset_sequence);
+        this.print(`New compilation started: [${main_tex_path}]`);
         if(bibtex)
         {
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir);
