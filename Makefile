@@ -20,9 +20,8 @@ URL_expat = https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat
 URL_fontconfig = https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.92.tar.gz
 
 URL_TEXLIVE_TEXMF = ftp://tug.org/texlive/historic/2020/texlive-20200406-texmf.tar.xz 
-URL_TEXLIVE_TLPDB = ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-full.tar.gz
-URL_TEXLIVE_BASE = http://mirrors.ctan.org/macros/latex/base.zip
 URL_TEXLIVE_INSTALLER = http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+URL_TEXLIVE_TLPDB = ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-full.tar.gz
 
 ROOT := $(CURDIR)
 EMROOT := $(dir $(shell which emcc))
@@ -259,15 +258,9 @@ build/texlive-%/texmf-dist: build/install-tl/install-tl build/texlive-%.profile
 
 build/format-%/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive-%/texmf-dist 
 	mkdir -p $(dir $@)
-	#rm $(dir $@)/* || true
-	#wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
-	#unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
-	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32  -ini -etex unpack.ins
+	rm $(dir $@)/* || true
+	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex unpack.ins
 	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base:build/texlive-basic/texmf-dist/tex/generic/unicode-data:build/texlive-basic/texmf-dist/tex/latex/base:build/texlive-basic/texmf-dist/tex/generic/hyphen/ TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex latex.ltx
-	
-	#TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
-	#touch hyphen.cfg 
-	#TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
 
 build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
 	#https://github.com/emscripten-core/emscripten/issues/12214
