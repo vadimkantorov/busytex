@@ -2,6 +2,7 @@
 #TODO: native busytex
 #TODO: CSFINPUT/fontconfig.conf - do sth about native version
 #TODO: abspath/realpath instead of ROOT
+#TODO: location of hyphen.cfg file?
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
@@ -59,7 +60,7 @@ CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex' 
 CFLAGS_wasm_bibtex = -s TOTAL_MEMORY=$(TOTAL_MEMORY) $(CFLAGS_OPT)
 CFLAGS_wasm_texlive = -s ERROR_ON_UNDEFINED_SYMBOLS=0 -I$(ROOT)/build/wasm/texlive/libs/icu/include -I$(ROOT)/source/fontconfig $(CFLAGS_OPT) 
 CFLAGS_wasm_icu = -s ERROR_ON_UNDEFINED_SYMBOLS=0 $(CFLAGS_OPT)
-# bug: https://github.com/emscripten-core/emscripten/issues/12093
+# uuid_generate_random feature request: https://github.com/emscripten-core/emscripten/issues/12093
 CFLAGS_wasm_fontconfig = -Duuid_generate_random=uuid_generate $(CFLAGS_OPT)
 CFLAGS_wasm_fontconfig_FREETYPE = -I$(ROOT)/build/wasm/texlive/libs/freetype2/ -I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2/
 LIBS_wasm_fontconfig_FREETYPE = -L$(ROOT)/build/wasm/texlive/libs/freetype2/ -lfreetype
@@ -69,6 +70,7 @@ CFLAGS_native_texlive = -I$(ROOT)/build/native/texlive/libs/icu/include -I$(ROOT
 CFLAGS_native_fontconfig_FREETYPE = -I$(ROOT)/build/native/texlive/libs/freetype2/ -I$(ROOT)/build/native/texlive/libs/freetype2/freetype2/
 LIBS_native_fontconfig_FREETYPE = -L$(ROOT)/build/native/texlive/libs/freetype2/ -lfreetype
 
+# EM_COMPILER_WRAPPER / EM_COMPILER_LAUNCHER feature request: https://github.com/emscripten-core/emscripten/issues/12340
 CCSKIP_wasm_icu = python3 $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata --
 CCSKIP_wasm_freetype2 = python3 $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
 CCSKIP_wasm_xetex = python3 $(ROOT)/busytexcc.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tie xetex) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
@@ -151,7 +153,7 @@ build/%/texlive.configured: source/texlive.patched
 	  --without-system-freetype2				\
 	  --without-system-libpng					\
 	  --without-system-zlib						\
-	  --with-banner-add="_busytex$*"				\
+	  --with-banner-add="_busytex$*"			\
 		CFLAGS="$(CFLAGS_$*_texlive)"	     	\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)"           \
 	  CXXFLAGS="$(CFLAGS_$*_texlive)"
@@ -204,9 +206,6 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 	$(MAKE_$*) -C build/$*/fontconfig
 
 ################################################################################################################
-
-build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtex8: build/native/texlive.configured
-	$(MAKE_native) -C $(dir $@)
 
 build/native/texlive/texk/web2c/xetex: 
 	$(MAKE_native) -C $(dir $@) xetex 
