@@ -64,7 +64,7 @@ class BusytexPipeline
     {
         const NOCLEANUP_callMain = (Module, args) =>
         {
-            //similar hack in xetex.js
+            //https://github.com/lyze/xetex-js/blob/master/post.worker.js
             Module.setPrefix(args[0]);
             const entryFunction = Module['_main'];
             const argc = args.length+1;
@@ -92,23 +92,28 @@ class BusytexPipeline
 
         const Module =
         {
-            instantiateWasm(imports, successCallback)
-            {
-                WebAssembly.instantiate(wasm_module, imports).then(successCallback);
-            },
-            
             noInitialRun : true,
 
             thisProgram : this.bin_busytex,
-
+            
+            totalDependencies: 0,
+            
+            prefix : "",
+            
             preRun : [() =>
             {
                 Object.setPrototypeOf(BusytexDataLoader, Module);
                 self.LZ4 = Module.LZ4;
                 BusytexDataLoader.preRun[0]();
+
                 init_env(Module.ENV);
                 init_fs(Module.FS);
             }],
+
+            instantiateWasm(imports, successCallback)
+            {
+                WebAssembly.instantiate(wasm_module, imports).then(successCallback);
+            },
             
             print(text) 
             {
@@ -135,16 +140,13 @@ class BusytexPipeline
                 this.totalDependencies = Math.max(this.totalDependencies, left);
                 Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
             },
-            
-            totalDependencies: 0,
-            
-            prefix : ""
         };
         const Module_ = await busytex(Module);
         let exit_code = 0;
         for(const args of arguments_array)
         {
             exit_code = NOCLEANUP_callMain(Module_, args, print);
+            //TODO: break if not zero?
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
         }
         return [Module_.FS, exit_code];
@@ -208,6 +210,7 @@ class BusytexPipeline
         this.print(`New compilation started: [${main_tex_path}]`);
         if(bibtex)
         {
+            //TODO: skip if not zero?
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir);
             [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project_dir);
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project_dir);

@@ -1,6 +1,12 @@
-#TODO: disable pre-js to enable dynamic choosing of TexLive distro
-#TODO: disable all pkgs
+#TODO: config.site instead of configure cache
+#TODO: native busytex
+
 #TODO: custom binaries for install-tl
+#TODO: enable tlmgr customization
+
+#TODO: virtual FS (for worker)
+#TODO: https://github.com/emscripten-core/emscripten/issues/11709#issuecomment-663901019
+# https://github.com/emscripten-core/emscripten/blob/master/src/library_idbfs.js#L21
 
 # $@ is lhs
 # $< is rhs
@@ -42,7 +48,7 @@ CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
 
-CFLAGS_OPT = -Oz -flto
+CFLAGS_OPT = -Oz
 CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xdvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair $(CFLAGS_OPT)
 CFLAGS_BIBTEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_bibtex8' -Dinitialize=bibtex_initialize -Deoln=bibtex_eoln -Dlast=bibtex_last -Dhistory=bibtex_history -Dbad=bibtex_bad -Dxchr=bibtex_xchr -Dbuffer=bibtex_buffer -Dclose_file=bibtex_close_file -Dusage=bibtex_usage $(CFLAGS_OPT)
 CFLAGS_XETEX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xetex' $(CFLAGS_OPT)
@@ -102,20 +108,21 @@ source/texlive.patched: source/texlive.downloaded
 	rm -rf $(addprefix source/texlive/, texk/upmendex texk/dviout-util texk/dvipsk texk/xdvik texk/dviljk texk/dvipos texk/dvidvi texk/dvipng texk/dvi2tty texk/dvisvgm texk/dtl texk/gregorio texk/cjkutils texk/musixtnt texk/tests texk/ttf2pk2 texk/ttfdump texk/makejvf texk/lcdf-typetools) || true
 	touch $@
 
+#  --enable-xetex							\
+#  --enable-dvipdfm-x						\
+#  --enable-icu								\
+
 build/%/texlive.configured: source/texlive.patched
 	mkdir -p $(basename $@)
 	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_texlive) 
 	echo 'ax_cv_c_float_words_bigendian=$${ax_cv_c_float_words_bigendian=no}' >> $(CACHE_$*_texlive) 
-
+	
 	cd $(basename $@) &&                        \
 	$(CONFIGURE_$*) $(ROOT)/source/texlive/configure		\
 	  --cache-file=$(CACHE_$*_texlive)  		\
 	  --prefix="$(PREFIX_$*)"					\
 	  --enable-dump-share						\
 	  --enable-static							\
-	  --enable-xetex							\
-	  --enable-dvipdfm-x						\
-	  --enable-icu								\
 	  --enable-freetype2						\
 	  --disable-shared							\
 	  --disable-multiplatform					\
@@ -137,7 +144,7 @@ build/%/texlive.configured: source/texlive.patched
 	  --without-system-freetype2				\
 	  --without-system-libpng					\
 	  --without-system-zlib						\
-	  --with-banner-add="_BUSY$*"				\
+	  --with-banner-add="_busytex$*"				\
 		CFLAGS="$(CFLAGS_$*_texlive)"	     	\
 	  CPPFLAGS="$(CFLAGS_$*_texlive)"           \
 	  CXXFLAGS="$(CFLAGS_$*_texlive)" &&        \
@@ -192,25 +199,25 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 ################################################################################################################
 
 build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtex8: build/native/texlive.configured
-	$(MAKE_native) -C $(dir $@) clean
+	#$(MAKE_native) -C $(dir $@) clean
 	$(MAKE_native) -C $(dir $@)
 
 build/native/texlive/texk/web2c/xetex: 
 	$(MAKE_native) -C $(dir $@) xetex 
 
 build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
-	$(MAKE_wasm) -C $(dir $@) clean
+	#$(MAKE_wasm) -C $(dir $@) clean
 	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_xdvipdfmx)
 	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
 build/wasm/texlive/texk/bibtex-x/bibtex8.a: build/wasm/texlive.configured
-	$(MAKE_wasm) -C $(dir $@) clean
-	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_bibtex) CSFINPUT=/bibtex
+	#$(MAKE_wasm) -C $(dir $@) clean
+	$(MAKE_wasm) -C $(dir $@) CSFINPUT=/bibtex $(OPTS_wasm_bibtex)
 	$(AR_wasm) -crs $@ $(dir $@)/bibtex8-*.o
 
 build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	# copying generated C files from native version, since string offsets are off
-	$(MAKE_wasm) -C $(dir $@) clean
+	#$(MAKE_wasm) -C $(dir $@) clean
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	$(MAKE_wasm) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
@@ -321,19 +328,19 @@ tds:
 
 .PHONY: wasm
 wasm:
-	#make build/wasm/texlive.configured
-	#make build/wasm/texlive/libs/libpng/libpng.a 
-	#make build/wasm/texlive/libs/libpaper/libpaper.a 
-	#make build/wasm/texlive/libs/zlib/libz.a 
-	#make build/wasm/texlive/libs/teckit/libTECkit.a 
-	#make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
-	#make build/wasm/texlive/libs/graphite2/libgraphite2.a 
-	#make build/wasm/texlive/libs/pplib/libpplib.a 
-	#make build/wasm/texlive/libs/freetype2/libfreetype.a 
-	#make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	#make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
-	#make build/wasm/expat/libexpat.a
-	#make build/wasm/fontconfig/src/.libs/libfontconfig.a
+	make build/wasm/texlive.configured
+	make build/wasm/texlive/libs/libpng/libpng.a 
+	make build/wasm/texlive/libs/libpaper/libpaper.a 
+	make build/wasm/texlive/libs/zlib/libz.a 
+	make build/wasm/texlive/libs/teckit/libTECkit.a 
+	make build/wasm/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/wasm/texlive/libs/graphite2/libgraphite2.a 
+	make build/wasm/texlive/libs/pplib/libpplib.a 
+	make build/wasm/texlive/libs/freetype2/libfreetype.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/wasm/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/wasm/expat/libexpat.a
+	make build/wasm/fontconfig/src/.libs/libfontconfig.a
 	# busy binaries
 	make build/wasm/texlive/texk/bibtex-x/bibtex8.a
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
