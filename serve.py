@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #test on python 3.4 ,python of lower version  has different module organization.
 import http.server
-from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 
 PORT = 8080
@@ -20,7 +19,9 @@ Handler.extensions_map={
 	'': 'application/octet-stream', # Default
     }
 
-httpd = socketserver.TCPServer(("", PORT), Handler)
+Server = http.server.ThreadingHTTPServer
+#Server = socketserver.TCPServer
+httpd = Server(("", PORT), Handler)
 
 print("serving at port", PORT)
 httpd.serve_forever()

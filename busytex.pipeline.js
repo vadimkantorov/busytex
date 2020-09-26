@@ -88,7 +88,9 @@ class BusytexPipeline
         }
 
         const print = this.print;
-        const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
+        const wasm_module = await this.wasm_module_promise;
+        const em_module = this.em_module_promise;
+        //const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
 
         const Module =
         {

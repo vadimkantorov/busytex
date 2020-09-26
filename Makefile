@@ -309,9 +309,9 @@ native:
 
 #.PHONY: tds-basic tds-small tds-full
 tds-%:
-	make build/install-tl/install-tl
-	make build/texlive-$*.profile
-	make build/texlive-$*/texmf-dist
+	#make build/install-tl/install-tl
+	#make build/texlive-$*.profile
+	#make build/texlive-$*/texmf-dist
 	make build/format-$*/latex.fmt
 	make build/wasm/fontconfig.conf
 	make build/wasm/texlive-$*.js
