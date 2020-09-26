@@ -1,5 +1,6 @@
 #TODO: config.site instead of configure cache
 #TODO: native busytex
+#TODO: CSFINPUT/fontconfig.conf - do sth about native version
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
@@ -47,6 +48,7 @@ CACHE_native_texlive = $(ROOT)/build/native-texlive.cache
 CACHE_wasm_texlive = $(ROOT)/build/wasm-texlive.cache
 CACHE_native_fontconfig = $(ROOT)/build/native-fontconfig.cache
 CACHE_wasm_fontconfig = $(ROOT)/build/wasm-fontconfig.cache
+CONFIG_SITE = $(ROOT)/busytex.site
 
 CFLAGS_OPT = -Oz
 CFLAGS_XDVIPDFMX = -Dmain='__attribute__((visibility(\"default\"))) busymain_xdvipdfmx' -Dcheck_for_jpeg=dvipdfmx_check_for_jpeg -Dcheck_for_bmp=dvipdfmx_check_for_bmp -Dcheck_for_png=dvipdfmx_check_for_png -Dseek_absolute=dvidpfmx_seek_absolute -Dseek_relative=dvidpfmx_seek_relative -Dseek_end=dvidpfmx_seek_end -Dtell_position=dvidpfmx_tell_position -Dfile_size=dvidpfmx_file_size -Dmfgets=dvipdfmx_mfgets -Dwork_buffer=dvipdfmx_work_buffer -Dget_unsigned_byte=dvipdfmx_get_unsigned_byte -Dget_unsigned_pair=dvipdfmx_get_unsigned_pair $(CFLAGS_OPT)
@@ -114,8 +116,12 @@ source/texlive.patched: source/texlive.downloaded
 
 build/%/texlive.configured: source/texlive.patched
 	mkdir -p $(basename $@)
+	
 	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_texlive) 
 	echo 'ax_cv_c_float_words_bigendian=$${ax_cv_c_float_words_bigendian=no}' >> $(CACHE_$*_texlive) 
+	
+	# echo '' > $(CACHE_$*_texlive)
+	# CONFIG_SITE=$(CONFIG_SITE)
 	
 	cd $(basename $@) &&                        \
 	$(CONFIGURE_$*) $(ROOT)/source/texlive/configure		\
@@ -230,7 +236,7 @@ build/install-tl/install-tl:
 	wget --no-clobber $(URL_TEXLIVE_INSTALLER) -P source || true
 	tar -xf "source/$(notdir $(URL_TEXLIVE_INSTALLER))" --strip-components=1 --directory="$(dir $@)"
 
-build/fontconfig/texlive.conf:
+build/wasm/fontconfig.conf:
 	mkdir -p $(dir $@)
 	echo '<?xml version="1.0"?>' > $@
 	echo '<!DOCTYPE fontconfig SYSTEM "fonts.dtd">' >> $@
@@ -264,14 +270,14 @@ build/format-%/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive-%/
 	touch hyphen.cfg 
 	TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
 
-build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/fontconfig/texlive.conf 
+build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
 	python3 $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
 		--lz4 --use-preload-cache \
 		--preload build/empty@/bin/busytex \
-		--preload build/fontconfig/texlive.conf@/fontconfig/texlive.conf \
+		--preload build/wasm/fontconfig.conf@/fontconfig/texlive.conf \
 		--preload build//texlive-$*/texmf-dist/web2c/texmf.cnf@/texmf.cnf \
 		--preload build/texlive-$*@/texlive \
 		--preload build/format-$*/latex.fmt@/latex.fmt \
@@ -307,8 +313,6 @@ native:
 	make build/native/expat/libexpat.a
 	make build/native/fontconfig/src/.libs/libfontconfig.a
 	# regular binaries 
-	make build/native/texlive/texk/bibtex-x/bibtex8
-	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx
 	make build/native/texlive/texk/web2c/xetex
 
 #.PHONY: tds-basic tds-small tds-full
@@ -317,7 +321,7 @@ tds-%:
 	make build/texlive-$*.profile
 	make build/texlive-$*/texmf-dist
 	make build/format-$*/latex.fmt
-	make build/fontconfig/texlive.conf
+	make build/wasm/fontconfig.conf
 	make build/wasm/texlive-$*.js
 
 .PHONY: tds
@@ -325,6 +329,7 @@ tds:
 	make tds-basic
 	make tds-small
 	make tds-medium
+	# make tds-full
 
 .PHONY: wasm
 wasm:

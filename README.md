@@ -44,15 +44,19 @@ make clean
 # browser version, will serve index.html at http://localhost:8080
 python3 serve.py
 
-# local version
-export FONTCONFIG_PATH=./dist/fontconfig
+# native version
+export TEXMFCNF=$PWD/dist/texmf.cnf
+export TEXMFDIST=$PWD/dist/texlive-basic/texmf-dist
+export FONTCONFIG_PATH=$PWD/dist
 export FONTCONFIG_FILE=texlive.conf
-export TEXMFCNF=./dist/texmf.cnf
-export TEXMFDIST=./dist/texlive/texmf-dist
 
-### native versions 
-build/native/busytex xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=build/latex.fmt example.tex
-build/native/busytex dvipdfmx example.xdv
+export LATEXFMT=$PWD/dist/latex.fmt
+export BUSYTEX=$PWD/dist/busytex
+
+cd example
+$BUSYTEX xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=$LATEXFMT example.tex
+$BUSYTEX bibtex8 example.aux
+$BUSYTEX xdvipdfmx example.xdv
 ```
 
 ### References

@@ -1,0 +1,11 @@
+*.bbl
+*.aux
+*.blg
+*.pdf
+*.fls
+*.log
+*.xdv
+
+build/
+source/
+dist/
