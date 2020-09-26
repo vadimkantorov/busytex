@@ -84,7 +84,7 @@ INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 all:
 	make texlive
 	make native
-	make tds-small
+	make tds
 	make wasm
 
 source/texlive.downloaded source/expat.downloaded source/fontconfig.downloaded:
@@ -261,7 +261,8 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
-	python3 $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --lz4 --use-preload-cache \
+	python3 $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
+		--lz4 --use-preload-cache \
 		--preload build/empty@/bin/busytex \
 		--preload build/fontconfig/texlive.conf@/fontconfig/texlive.conf \
 		--preload build//texlive-$*/texmf-dist/web2c/texmf.cnf@/texmf.cnf \
@@ -271,8 +272,8 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 
 ################################################################################################################
 
-build/wasm/busytex-%.js: build/wasm/texlive-%.js
-	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1  -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack"]' --pre-js $< -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+build/wasm/busytex.js: 
+	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack", "LZ4"]' -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
@@ -312,6 +313,12 @@ tds-%:
 	make build/fontconfig/texlive.conf
 	make build/wasm/texlive-$*.js
 
+.PHONY: tds
+tds:
+	make tds-basic
+	make tds-small
+	make tds-medium
+
 .PHONY: wasm
 wasm:
 	#make build/wasm/texlive.configured
@@ -331,7 +338,7 @@ wasm:
 	make build/wasm/texlive/texk/bibtex-x/bibtex8.a
 	make build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a
 	make build/wasm/texlive/texk/web2c/libxetex.a
-	make build/wasm/busytex-small.js
+	make build/wasm/busytex.js
 
 .PHONY: example
 example:
@@ -368,7 +375,7 @@ clean:
 .PHONY: dist
 dist:
 	mkdir -p $@
-	cp build/wasm/busytex.js build/wasm/texlive.data build/wasm/busytex.wasm $@
+	cp build/wasm/busytex.js build/wasm/busytex.wasm build/wasm/texlive-*.js build/wasm/texlive-*.data $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
 .PHONY: dist/emscriptenfs.js

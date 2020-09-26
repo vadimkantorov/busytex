@@ -20,12 +20,25 @@ function BusytexWorkerScriptLoader(src)
     return Promise.resolve(self.importScripts(src));
 }
 
+BusytexDataLoader = 
+{
+    //https://emscripten.org/docs/api_reference/module.html#Module.getPreloadedPackage
+    //https://github.com/emscripten-core/emscripten/blob/master/tests/manual_download_data.html
+
+    preRun : [],
+
+    locateFile(remote_package_name)
+    {
+        return '/dist/' + remote_package_name
+    },
+};
+
 class BusytexPipeline
 {
-    constructor(busytex_js, busytex_wasm, print, script_loader)
+    constructor(busytex_js, busytex_wasm, texlive_js, print, script_loader)
     {
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
-        this.em_module_promise = script_loader(busytex_js);
+        this.em_module_promise = script_loader(busytex_js).then(_ => script_loader(texlive_js));
         this.print = print;
         
         this.project_dir = '/home/web_user/project_dir';
@@ -36,6 +49,7 @@ class BusytexPipeline
         this.dir_cnf = '/';
         this.dir_fontconfig = '/fontconfig';
         this.conf_fontconfig = 'texlive.conf';
+        this.dir_bibtexcsf = '/bibtex';
 
         this.init_env = ENV =>
         {
@@ -50,6 +64,7 @@ class BusytexPipeline
     {
         const NOCLEANUP_callMain = (Module, args) =>
         {
+            //similar hack in xetex.js
             Module.setPrefix(args[0]);
             const entryFunction = Module['_main'];
             const argc = args.length+1;
@@ -84,15 +99,13 @@ class BusytexPipeline
             
             noInitialRun : true,
 
-            locateFile(remote_package_name)
-            {
-                return '/dist/' + remote_package_name
-            },
-
             thisProgram : this.bin_busytex,
 
             preRun : [() =>
             {
+                Object.setPrototypeOf(BusytexDataLoader, Module);
+                self.LZ4 = Module.LZ4;
+                BusytexDataLoader.preRun[0]();
                 init_env(Module.ENV);
                 init_fs(Module.FS);
             }],
@@ -127,7 +140,6 @@ class BusytexPipeline
             
             prefix : ""
         };
-        
         const Module_ = await busytex(Module);
         let exit_code = 0;
         for(const args of arguments_array)
@@ -150,7 +162,7 @@ class BusytexPipeline
         const aux_path = source_name.replace('.tex', '.aux');
 
         const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
-        const cmd_bibtex8 = ['bibtex8', '--csfile', '/bibtex/88591lat.csf', aux_path];
+        const cmd_bibtex8 = ['bibtex8', aux_path]; //'--csfile', '/bibtex/88591lat.csf'
         const cmd_xdvipdfmx = ['xdvipdfmx', xdv_path];
 
         let [_FS_, exit_code] = [null, 0]

@@ -4,9 +4,14 @@
 <label for="worker">Use Worker</label>
 <input type="checkbox" id="bibtex" name="bibtex"checked>
 <label for="bibtex">Run BibTeX</label>
+<select name="scheme" id="scheme">
+    <option value="basic">Basic Profile</option>
+    <option value="small">Small Profile</option>
+    <option value="medium">Medium Profile</option>
+</select>
 <button onclick="clearlog()">Clear Log</button>
-<span id="elapsed" name="time_elapsed" style="float:right">0.00 sec</span>
-<label for="elapsed" style="float:right">Time elapsed:</label>
+<label for="elapsed">Time elapsed:</label>
+<span id="elapsed" name="time_elapsed">0.00 sec</span>
 </div>
 <div><iframe style="width: 98%; height:25%" id="preview"></iframe></div>
 
@@ -31,11 +36,11 @@ Blablabla said Nobody ~\cite{Nobody06}.
 </textarea></div>
 
 <div><textarea style="width: 98%; height: 20%" id="status"></textarea></div>
-<div><button style="width: 98%; height: 5%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
+<div><button style="width: 98%; height: 10%; font-size: x-large" onclick="onclick_()">Compile</button></div> 
 
 <script>
 
-const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm';
+    const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm', texlive_scheme_js = '/dist/texlive-{scheme}.js';
 const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
 
 async function onclick_()
@@ -43,7 +48,9 @@ async function onclick_()
     let tic = 0;
     let worker = null;
 
-    const use_worker = document.getElementById('worker').checked, use_bibtex = document.getElementById('bibtex').checked;
+    const use_worker = document.getElementById('worker').checked, use_bibtex = document.getElementById('bibtex').checked; 
+    const texlive_js = texlive_scheme_js.replace('{scheme}', document.getElementById('scheme').value);
+
     if(use_worker)
     {
         worker = new Worker(busytex_worker_js);
@@ -63,7 +70,7 @@ async function onclick_()
                         s.onload = resolve;
                         s.onerror = reject;
                         self.document.head.appendChild(s);
-                    }).then(_ => Promise.resolve(new BusytexPipeline(busytex_js, busytex_wasm, msg => this.onmessage({data: {log : msg}}), BusytexDefaultScriptLoader)));
+                    }).then(_ => Promise.resolve(new BusytexPipeline(busytex_js, busytex_wasm, texlive_js, msg => this.onmessage({data: {log : msg}}), BusytexDefaultScriptLoader)));
                 }
 
                 else if(files && this.pipeline)
@@ -103,7 +110,7 @@ async function onclick_()
             statusElement.scrollTop = statusElement.scrollHeight;
         }
     }
-    worker.postMessage({busytex_wasm : busytex_wasm, busytex_js : busytex_js});
+    worker.postMessage({busytex_wasm : busytex_wasm, busytex_js : busytex_js, texlive_js : texlive_js});
 
     tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
