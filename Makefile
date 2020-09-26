@@ -206,25 +206,21 @@ build/%/fontconfig/src/.libs/libfontconfig.a: source/fontconfig.patched build/%/
 ################################################################################################################
 
 build/native/texlive/texk/dvipdfm-x/xdvipdfmx build/native/texlive/texk/bibtex-x/bibtex8: build/native/texlive.configured
-	#$(MAKE_native) -C $(dir $@) clean
 	$(MAKE_native) -C $(dir $@)
 
 build/native/texlive/texk/web2c/xetex: 
 	$(MAKE_native) -C $(dir $@) xetex 
 
 build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
-	#$(MAKE_wasm) -C $(dir $@) clean
 	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_xdvipdfmx)
 	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
 build/wasm/texlive/texk/bibtex-x/bibtex8.a: build/wasm/texlive.configured
-	#$(MAKE_wasm) -C $(dir $@) clean
 	$(MAKE_wasm) -C $(dir $@) CSFINPUT=/bibtex $(OPTS_wasm_bibtex)
 	$(AR_wasm) -crs $@ $(dir $@)/bibtex8-*.o
 
 build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	# copying generated C files from native version, since string offsets are off
-	#$(MAKE_wasm) -C $(dir $@) clean
 	mkdir -p build/wasm/texlive/texk/web2c
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	$(MAKE_wasm) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
