@@ -2,7 +2,7 @@
 #TODO: native busytex
 #TODO: CSFINPUT/fontconfig.conf - do sth about native version
 #TODO: abspath/realpath instead of ROOT
-#TODO: location of hyphen.cfg file?
+#TODO: location of hyphen.cfg file? https://tex.loria.fr/ctan-doc/macros/latex/doc/html/cfgguide/node11.html
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
@@ -120,14 +120,14 @@ source/texlive.patched: source/texlive.downloaded
 build/%/texlive.configured: source/texlive.patched
 	mkdir -p $(basename $@)
 	
-	echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_texlive) 
-	echo 'ax_cv_c_float_words_bigendian=$${ax_cv_c_float_words_bigendian=no}' >> $(CACHE_$*_texlive) 
+	#echo 'ac_cv_func_getwd=$${ac_cv_func_getwd=no}' > $(CACHE_$*_texlive) 
+	#echo 'ax_cv_c_float_words_bigendian=$${ax_cv_c_float_words_bigendian=no}' >> $(CACHE_$*_texlive) 
 	
-	# echo '' > $(CACHE_$*_texlive)
+	echo '' > $(CACHE_$*_texlive)
 	# CONFIG_SITE=$(CONFIG_SITE)
 	
 	cd $(basename $@) &&                        \
-	$(CONFIGURE_$*) $(ROOT)/source/texlive/configure		\
+	CONFIG_SITE=$(CONFIG_SITE) $(CONFIGURE_$*) $(ROOT)/source/texlive/configure		\
 	  --cache-file=$(CACHE_$*_texlive)  		\
 	  --prefix="$(PREFIX_$*)"					\
 	  --enable-dump-share						\
@@ -259,12 +259,15 @@ build/texlive-%/texmf-dist: build/install-tl/install-tl build/texlive-%.profile
 
 build/format-%/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive-%/texmf-dist 
 	mkdir -p $(dir $@)
-	rm $(dir $@)/* || true
-	wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
-	unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
-	TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
-	touch hyphen.cfg 
-	TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
+	#rm $(dir $@)/* || true
+	#wget --no-clobber $(URL_TEXLIVE_BASE) -P source || true
+	#unzip -o -j $(notdir $(URL_TEXLIVE_BASE)) -d $(dir $@)
+	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32  -ini -etex unpack.ins
+	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base:build/texlive-basic/texmf-dist/tex/generic/unicode-data:build/texlive-basic/texmf-dist/tex/latex/base:build/texlive-basic/texmf-dist/tex/generic/hyphen/ TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex latex.ltx
+	
+	#TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex unpack.ins 
+	#touch hyphen.cfg 
+	#TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -ini -etex latex.ltx
 
 build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
 	#https://github.com/emscripten-core/emscripten/issues/12214
