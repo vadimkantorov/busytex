@@ -6,7 +6,9 @@
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
 
-#TODO: virtual FS (for worker)
+#TODO: support several data packages: eager and lazy ones
+#TODO: support local texmf directory
+#TODO: custom FS that could work with package zip archvies
 #TODO: https://github.com/emscripten-core/emscripten/issues/11709#issuecomment-663901019
 # https://github.com/emscripten-core/emscripten/blob/master/src/library_idbfs.js#L21
 
@@ -274,6 +276,19 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 		--preload build/format-$*/latex.fmt@/latex.fmt \
 		--preload source/texlive/texk/bibtex-x/csf@/bibtex
 
+build/wasm/texlive-%-lazy.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
+	#https://github.com/emscripten-core/emscripten/issues/12214
+	mkdir -p $(dir $@)
+	echo > build/empty
+	python3 lazy_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
+		--lz4 --use-preload-cache \
+		--preload build/empty@/bin/busytex \
+		--preload build/wasm/fontconfig.conf@/fontconfig/texlive.conf \
+		--preload build//texlive-$*/texmf-dist/web2c/texmf.cnf@/texmf.cnf \
+		--preload build/texlive-$*@/texlive \
+		--preload build/format-$*/latex.fmt@/latex.fmt \
+		--preload source/texlive/texk/bibtex-x/csf@/bibtex
+
 ################################################################################################################
 
 build/wasm/busytex.js: 
@@ -314,6 +329,7 @@ tds-%:
 	make build/format-$*/latex.fmt
 	make build/wasm/fontconfig.conf
 	make build/wasm/texlive-$*.js
+	make build/wasm/texlive-$*-lazy.js
 
 .PHONY: tds
 tds:

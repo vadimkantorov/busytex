@@ -11,13 +11,15 @@ def traverse(preload):
             for s in splitted:
                 d = os.path.join(d, s)
                 res_dirs.add(d)
+            res_files.add(dst_path)
         else:
             print(f'Processing directory [{src_path}]')
             for root, dirs, files in os.walk(src_path, topdown = True):
                 res_dirs.add(root.replace(src_path, dst_path))
                 res_dirs.update(os.path.join(root.replace(src_path, dst_path), name) for name in dirs)
                 res_files.update(os.path.join(root.replace(src_path, dst_path), name) for name in files)
-
+    
+    res_dirs.remove('/')
     return list(sorted(res_dirs)), list(sorted(res_files))
 
 def main(data_file, js_output, export_name, preload):
@@ -26,9 +28,9 @@ def main(data_file, js_output, export_name, preload):
     f = open(js_output, 'w')
     f.write(f'''var Module = typeof {export_name} !== 'undefined' ? {export_name}''' + ' : {};')
     f.write('(function() {\n')
-    f.write('function runWithFS() { const FS = Module.FS, R = Module.locateFile("/");\n')
-    f.writelines(f'FS.mkdir("{dst_dir}");\n' for dst_dir in dirs)
-    f.writelines(f'FS.createLazyFile("{dst_dir}", "{dst_name}", R + "{dst_path}", true, false);\n' for dst_path in files for dst_dir, dst_name in [(os.path.dirname(dst_path), os.path.basename(dst_path))])
+    f.write('function runWithFS() { const FS = Module.FS, R = Module.locateFile("/"); const M = p => { try { FS.mkdir(p); } catch{} }, F = (dst_dir, dst_name, dst_path) => FS.createLazyFile(dst_dir, dst_name, R + dst_path, true, false);\n')
+    f.writelines(f'M("{dst_dir}");\n' for dst_dir in dirs)
+    f.writelines(f'F("{dst_dir}", "{dst_name}", "{dst_path}");\n' for dst_path in files for dst_dir, dst_name in [(os.path.dirname(dst_path), os.path.basename(dst_path))])
     f.write('}\n')
     f.write('''
     if (Module['calledRun']) {
