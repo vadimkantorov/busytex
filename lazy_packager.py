@@ -21,13 +21,22 @@ def traverse(preload):
     return list(sorted(res_dirs)), list(sorted(res_files))
 
 def main(data_file, js_output, export_name, preload):
+    dirs, files = traverse(preload)
+    
     f = open(js_output, 'w')
     f.write(f'''var Module = typeof {export_name} !== 'undefined' ? {export_name}''' + ' : {};')
     f.write('(function() {\n')
-    f.write('var root_url = Module.locateFile("/");\n')
-    dirs, files = traverse(preload)
+    f.write('function runWithFS() { const FS = Module.FS, R = Module.locateFile("/");\n')
     f.writelines(f'FS.mkdir("{dst_dir}");\n' for dst_dir in dirs)
-    f.writelines(f'FS.createLazyFile("{dst_dir}", "{dst_name}", `${{root_url}}{dst_path}`, true, false);\n' for dst_path in files for dst_dir, dst_name in [(os.path.dirname(dst_path), os.path.basename(dst_path))])
+    f.writelines(f'FS.createLazyFile("{dst_dir}", "{dst_name}", R + "{dst_path}", true, false);\n' for dst_path in files for dst_dir, dst_name in [(os.path.dirname(dst_path), os.path.basename(dst_path))])
+    f.write('}\n')
+    f.write('''
+    if (Module['calledRun']) {
+      runWithFS();
+    } else {
+      if (!Module['preRun']) Module['preRun'] = [];
+      Module["preRun"].push(runWithFS); // FS is not initialized yet, wait for it
+    }''')
     f.write('})();')
     print(f'Written to [{js_output}]')
 
