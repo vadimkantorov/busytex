@@ -1,4 +1,3 @@
-#TODO: config.site instead of configure cache
 #TODO: native busytex
 #TODO: CSFINPUT/fontconfig.conf - do sth about native version
 #TODO: abspath/realpath instead of ROOT
