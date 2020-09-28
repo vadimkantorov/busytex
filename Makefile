@@ -4,9 +4,11 @@
 #TODO: PROXYFS
 #TODO: caching for cloning
 #TODO: return full log along with pdf
+#TODO: configure DataLoader externally
+#TODO: rate limit error: documentation_url: "https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"
+#TODO: message: "API rate limit exceeded for 92.169.44.67. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)"
 
-
-#TODO: native busytex + CSFINPUT/fontconfig.conf
+#TODO: native busytex + CSFINPUT/fontconfig.conf//'--csfile', '/bibtex/88591lat.csf'
 #TODO: abspath/realpath instead of ROOT
 #TODO: location of hyphen.cfg file? https://tex.loria.fr/ctan-doc/macros/latex/doc/html/cfgguide/node11.html
 

@@ -121,10 +121,10 @@
             const repo = await resp.json();
             this.println(`remote: Enumerating objects: ${repo.length}, done.`);
 
-            FS.mkdir(repo_path);
-            FS.mkdir(repo_path + '/.git');
-            FS.writeFile(repo_path + '/.git/config', '[remote "origin"]\nurl = ' + https_path);
-            FS.writeFile(repo_path + '/.git/githubapicontents.json', JSON.stringify(repo));
+            this.FS.mkdir(repo_path);
+            this.FS.mkdir(repo_path + '/.git');
+            this.FS.writeFile(repo_path + '/.git/config', '[remote "origin"]\nurl = ' + https_path);
+            this.FS.writeFile(repo_path + '/.git/githubapicontents.json', JSON.stringify(repo));
             
             while(repo.length > 0)
             {
@@ -220,7 +220,7 @@
             if(this.github_https_path.length > 1)
                 this.github_https_path = 'https://github.com' + this.github_https_path.slice(1);
             
-            this.guthub = new Guthub(this.FS, self.github_auth_token, println);
+            this.guthub = new Guthub(this.FS, this.github_auth_token, println);
             this.tic_ = 0;
             this.pdf_path = '';
         }
@@ -288,7 +288,7 @@
 
         pwd(replace_home)
         {
-            const cwd = this.FS ? FS.cwd() : this.home;
+            const cwd = this.FS ? this.FS.cwd() : this.home;
             return replace_home == true ? cwd.replace(this.home, '~') : cwd;    
         }
         
@@ -313,7 +313,7 @@
             this.FS.mkdir(path);
         }
 
-        async latexmk(tex_path, bibtex)
+        async latexmk(tex_path)
         {
             this.println('Running in background...');
             this.tic();
@@ -337,15 +337,15 @@
             console.assert(tex_path.endsWith('.tex'));
             console.assert(cwd.startsWith(this.home));
             
-            // /home/web_user/project
             const project_dir = cwd.split('/').slice(0, 4).join('/');
             const source_path = `${cwd}/${tex_path}`;
             const main_tex_path = source_path.slice(project_dir.length + 1);
 
             const files = traverse(project_dir, '.');
-            //const pdf = await this.compiler.compile(files, main_tex_path, bibtex);
             this.pdf_path = pdf_path;
-            this.compiler.postMessage({files : files, main_tex_path : main_tex_path, bibtex : bibtex});
+            this.compiler.postMessage({files : files, main_tex_path : main_tex_path});
+            
+            //const pdf = await this.compiler.compile(files, main_tex_path, bibtex);
             //this.FS.writeFile(pdf_path, pdf);
             //this.open(pdf_path, pdf);
         }
@@ -438,7 +438,7 @@
                 }
                 else if(cmd == 'latexmk')
                 {
-                    await shell.latexmk(arg, true);
+                    await shell.latexmk(arg);
                 }
                 else if(cmd == 'pwd')
                 {
@@ -535,19 +535,26 @@
         window.println = text =>
         {
             let statusElement = document.getElementById('status');
-            statusElement.value += text;
-            statusElement.value += '\n';
-            statusElement.scrollTop = statusElement.scrollHeight;
+            const ansi_reset_sequence = '\x1bc';
+            if(text == ansi_reset_sequence)
+                statusElement.value = '';
+            else
+            {
+                statusElement.value += text;
+                statusElement.value += '\n';
+                statusElement.scrollTop = statusElement.scrollHeight;
+            }
         };
         
         const Module = await emscriptenfs(modularized_module(null, () =>  {}, window.println));
         const FS = Module.FS;
-        cosnt FS.chdir('/home/web_user')
+
+        FS.chdir('/home/web_user');
 
         const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm';
         const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
-        const texlive_js = ['/dist/texlive-basic.js'];
-        const texmf_local = './texmf';
+        const texlive_js = ['/dist/texlive-basic.js'];//, '/dist/texlive-latex-recommended.js', '/dist/texlive-latex-extra.js'];
+        const texmf_local = ['./texmf'];
 
         window.compiler = new Worker(busytex_worker_js);
         window.compiler.onmessage = e =>

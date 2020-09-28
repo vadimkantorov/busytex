@@ -43,15 +43,17 @@ class BusytexPipeline
             this.em_module_promise = this.em_module_promise.then(_ => script_loader(data_package_js));
         this.print = print;
         
-        this.project_dir = '/home/web_user/project_dir';
+        this.project_dir = '/home/web_user/project_dir/';
         this.bin_busytex = '/bin/busytex';
         this.fmt_latex = '/latex.fmt';
-        this.dir_texmfdist = '/texlive/texmf-dist:/texmf/texmf-dist:' + texmf_local.join(':') + ':';
+        this.dir_texmfdist = ['/texlive', '/texmf', ...texmf_local].map(texmf => (texmf.startsWith('/') ? '' : this.project_dir) + texmf + '/texmf-dist').join(':');
         this.cnf_texlive = '/texmf.cnf';
         this.dir_cnf = '/';
         this.dir_fontconfig = '/fontconfig';
         this.conf_fontconfig = 'texlive.conf';
         this.dir_bibtexcsf = '/bibtex';
+
+        console.log('TEXMFDIST', this.dir_texmfdist);
 
         this.init_env = ENV =>
         {
@@ -106,7 +108,7 @@ class BusytexPipeline
             
             preRun : [() =>
             {
-                if(pre_run)
+                if(pre_run != false)
                 {
                     Object.setPrototypeOf(BusytexDataLoader, Module);
                     self.LZ4 = Module.LZ4;
@@ -153,6 +155,7 @@ class BusytexPipeline
         let exit_code = 0;
         for(const args of arguments_array)
         {
+            console.log(Module_.FS.cwd(), Module_.ENV);
             exit_code = NOCLEANUP_callMain(Module_, args, print);
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
 
@@ -174,7 +177,7 @@ class BusytexPipeline
         const aux_path = source_name.replace('.tex', '.aux');
 
         const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
-        const cmd_bibtex8 = ['bibtex8', aux_path]; //'--csfile', '/bibtex/88591lat.csf'
+        const cmd_bibtex8 = ['bibtex8', aux_path]; 
         const cmd_xdvipdfmx = ['xdvipdfmx', xdv_path];
 
         let [_FS_, exit_code] = [null, 0]
@@ -220,7 +223,13 @@ class BusytexPipeline
         const ansi_reset_sequence = '\x1bc';
         this.print(ansi_reset_sequence);
         this.print(`New compilation started: [${main_tex_path}]`);
-        if(bibtex)
+        
+        if(bibtex == null)
+            bibtex = files.some(({path, contents}) => contents != null && path.endsWith('.bib'));
+        if(exit_early == null)
+            exit_early = true;
+
+        if(bibtex == true)
         {
             const pre_run = true;
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
@@ -233,7 +242,7 @@ class BusytexPipeline
         }
         else
         {
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early, pre_run);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early);
         }
 
         if(exit_code == 0) 
