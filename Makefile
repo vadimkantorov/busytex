@@ -8,9 +8,12 @@
 
 #TODO: support several data packages: eager and lazy ones
 #TODO: support local texmf directory
-#TODO: custom FS that could work with package zip archvies
+#TODO: custom FS that could work with package zip archvies (CTAN?)
+#TODO: custom FS to share FS between runs
 #TODO: https://github.com/emscripten-core/emscripten/issues/11709#issuecomment-663901019
 # https://github.com/emscripten-core/emscripten/blob/master/src/library_idbfs.js#L21
+# https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages
+# https://github.com/emscripten-core/emscripten/pull/4737
 
 # $@ is lhs
 # $< is rhs
@@ -276,18 +279,18 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 		--preload build/format-$*/latex.fmt@/latex.fmt \
 		--preload source/texlive/texk/bibtex-x/csf@/bibtex
 
-build/wasm/texlive-%-lazy.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
-	#https://github.com/emscripten-core/emscripten/issues/12214
+.PHONY: dist/texlive-lazy.js
+dist/texlive-lazy.js:
 	mkdir -p $(dir $@)
-	echo > build/empty
-	python3 lazy_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
-		--lz4 --use-preload-cache \
-		--preload build/empty@/bin/busytex \
-		--preload build/wasm/fontconfig.conf@/fontconfig/texlive.conf \
-		--preload build//texlive-$*/texmf-dist/web2c/texmf.cnf@/texmf.cnf \
-		--preload build/texlive-$*@/texlive \
-		--preload build/format-$*/latex.fmt@/latex.fmt \
-		--preload source/texlive/texk/bibtex-x/csf@/bibtex
+	rm -rf dist/texmf || true
+	python3 lazy_packager.py dist --js-output=$@ --export-name=BusytexDataLoader \
+		--preload build/texlive-full/texmf-dist/tex/latex/titlesec@/texmf/texmf-dist/tex/latex/titlesec \
+		--preload build/texlive-full/texmf-dist/tex/latex/xcolor@/texmf/texmf-dist/tex/latex/xcolor \
+		--preload build/texlive-full/texmf-dist/tex/latex/etoolbox@/texmf/texmf-dist/tex/latex/etoolbox \
+		--preload build/texlive-full/texmf-dist/tex/latex/footmisc@/texmf/texmf-dist/tex/latex/footmisc \
+		--preload build/texlive-full/texmf-dist/tex/latex/textpos@/texmf/texmf-dist/tex/latex/textpos \
+		--preload build/texlive-full/texmf-dist/tex/latex/ms@/texmf/texmf-dist/tex/latex/ms \
+		--preload build/texlive-full/texmf-dist/tex/latex/parskip@/texmf/texmf-dist/tex/latex/parksip
 
 ################################################################################################################
 
@@ -329,7 +332,6 @@ tds-%:
 	make build/format-$*/latex.fmt
 	make build/wasm/fontconfig.conf
 	make build/wasm/texlive-$*.js
-	make build/wasm/texlive-$*-lazy.js
 
 .PHONY: tds
 tds:

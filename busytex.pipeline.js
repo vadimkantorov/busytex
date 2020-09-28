@@ -38,13 +38,15 @@ class BusytexPipeline
     constructor(busytex_js, busytex_wasm, texlive_js, print, script_loader)
     {
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
-        this.em_module_promise = script_loader(busytex_js).then(_ => script_loader(texlive_js));
+        this.em_module_promise = script_loader(busytex_js);
+        for(const data_package_js of texlive_js)
+            this.em_module_promise = this.em_module_promise.then(_ => script_loader(data_package_js));
         this.print = print;
         
         this.project_dir = '/home/web_user/project_dir';
         this.bin_busytex = '/bin/busytex';
         this.fmt_latex = '/latex.fmt';
-        this.dir_texmfdist = '/texlive/texmf-dist:';
+        this.dir_texmfdist = '/texlive/texmf-dist:/texmf/texmf-dist:';
         this.cnf_texlive = '/texmf.cnf';
         this.dir_cnf = '/';
         this.dir_fontconfig = '/fontconfig';
@@ -89,7 +91,7 @@ class BusytexPipeline
 
         const print = this.print;
         const wasm_module = await this.wasm_module_promise;
-        const em_module = this.em_module_promise;
+        const em_module = await this.em_module_promise;
         //const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
 
         const Module =
@@ -106,7 +108,8 @@ class BusytexPipeline
             {
                 Object.setPrototypeOf(BusytexDataLoader, Module);
                 self.LZ4 = Module.LZ4;
-                BusytexDataLoader.preRun[0]();
+                for(const preRun of BusytexDataLoader.preRun) 
+                    preRun();
 
                 init_env(Module.ENV);
                 init_fs(Module.FS);
