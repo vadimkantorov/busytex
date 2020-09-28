@@ -102,8 +102,12 @@ https://gist.github.com/przemoc/571086
 8. Ctrl+V, command history
 9. Figure out Terminal sizing
 10. file tab auto-complete
+11. Shell into module
+12. GutHub into module
 
 ### Links
+
+https://swimburger.net/blog/dotnet/how-to-deploy-aspnet-blazor-webassembly-to-github-pages
 
 https://github.com/tbfleming/em-shell
 

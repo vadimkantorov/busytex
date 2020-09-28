@@ -1,7 +1,10 @@
+#TODO: check github serving
+#TODO: auto-bibtex running
 #TODO: support local texmf directory
 #TODO: PROXYFS
-#TODO: extra packages: https://packages.ubuntu.com/groovy/all/texlive-latex-recommended/filelist, https://packages.ubuntu.com/bionic/all/texlive-latex-extra/filelist
-#TOOD: caching for cloning
+#TODO: caching for cloning
+#TODO: return full log along with pdf
+
 
 #TODO: native busytex + CSFINPUT/fontconfig.conf
 #TODO: abspath/realpath instead of ROOT
@@ -304,8 +307,10 @@ build/wasm/texlive-latex-%.js:
 
 ################################################################################################################
 
+.PHONY:build/wasm/busytex.js
 build/wasm/busytex.js: 
-	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0 -s MODULARIZE=1 -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s EXPORT_NAME=busytex -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack", "LZ4"]' -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+	mkdir -p $(dir $@)
+	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0  -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXPORT_NAME=$(notdir $(basename $@)) -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack", "LZ4", "PROXYFS"]' -lproxyfs.js  -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 

@@ -62,7 +62,7 @@ class BusytexPipeline
         };
     }
 
-    async run(arguments_array, init_env, init_fs)
+    async run(arguments_array, init_env, init_fs, exit_early, pre_run)
     {
         const NOCLEANUP_callMain = (Module, args) =>
         {
@@ -106,13 +106,16 @@ class BusytexPipeline
             
             preRun : [() =>
             {
-                Object.setPrototypeOf(BusytexDataLoader, Module);
-                self.LZ4 = Module.LZ4;
-                for(const preRun of BusytexDataLoader.preRun) 
-                    preRun();
+                if(pre_run)
+                {
+                    Object.setPrototypeOf(BusytexDataLoader, Module);
+                    self.LZ4 = Module.LZ4;
+                    for(const preRun of BusytexDataLoader.preRun) 
+                        preRun();
+                }
 
                 init_env(Module.ENV);
-                init_fs(Module.FS);
+                init_fs(Module, Module.FS);
             }],
 
             instantiateWasm(imports, successCallback)
@@ -151,13 +154,15 @@ class BusytexPipeline
         for(const args of arguments_array)
         {
             exit_code = NOCLEANUP_callMain(Module_, args, print);
-            //TODO: break if not zero?
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
+
+            if(exit_code != 0 && exit_early == true)
+                break;
         }
         return [Module_.FS, exit_code];
     }
 
-    async compile(files, main_tex_path, bibtex)
+    async compile(files, main_tex_path, bibtex, exit_early)
     {
         const source_name = main_tex_path.slice(main_tex_path.lastIndexOf('/') + 1);
         const dirname = main_tex_path.slice(0, main_tex_path.length - source_name.length) || '.';
@@ -189,7 +194,7 @@ class BusytexPipeline
             }
         }
         
-        const init_project_dir = FS =>
+        const init_project_dir = (Module, FS) =>
         {
             FS.mkdir(this.project_dir);
             for(const {path, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
@@ -204,8 +209,10 @@ class BusytexPipeline
             FS.chdir(source_dir);
         };
 
-        const copy_project_dir = FS =>
+        const copy_project_dir = (Module, FS) =>
         {
+            FS.mkdir(this.project_dir);
+            //FS.mount(Module.PROXYFS, { root: this.project_dir , fs: _FS_}, this.project_dir);
             copytree(this.project_dir, _FS_, FS);
             FS.chdir(source_dir);
         };
@@ -215,16 +222,23 @@ class BusytexPipeline
         this.print(`New compilation started: [${main_tex_path}]`);
         if(bibtex)
         {
-            //TODO: skip if not zero?
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir);
-            [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project_dir);
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project_dir);
+            const pre_run = true;
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
+            
+            if(exit_code == 0 || exit_early != true)
+                [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project_dir, true, pre_run);
+            
+            if(exit_code == 0 || exit_early != true)
+                [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project_dir, exit_early, pre_run);
         }
         else
         {
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early, pre_run);
         }
 
-        return _FS_.readFile(pdf_path, {encoding: 'binary'});
+        if(exit_code == 0) 
+            return _FS_.readFile(pdf_path, {encoding: 'binary'});
+        
+        return null;
     }
 }
