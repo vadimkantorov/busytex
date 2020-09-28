@@ -1,6 +1,4 @@
 #TODO: check github serving
-#TODO: auto-bibtex running
-#TODO: support local texmf directory
 #TODO: PROXYFS
 #TODO: caching for cloning
 #TODO: return full log along with pdf
@@ -15,6 +13,7 @@
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
+#TODO: instruciton for local tlmgr install tinytex
 
 #TODO: custom FS that could work with package zip archvies (CTAN? ftp://tug.org/texlive/Contents/live/texmf-dist/)
 #TODO: https://github.com/emscripten-core/emscripten/issues/11709#issuecomment-663901019
