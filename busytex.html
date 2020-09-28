@@ -104,9 +104,8 @@ async function onclick_()
         }
     }
 
-    worker.onmessage = e =>
+    worker.onmessage = ({ data : {pdf, log} }) =>
     {
-        const {pdf, log} = e.data;
         if(pdf)
         {
             let previewElement = document.getElementById('preview');
@@ -118,7 +117,7 @@ async function onclick_()
             worker.terminate();
         }
 
-        if(log)
+        else if(log)
         {
             let statusElement = document.getElementById('status');
             const ansi_reset_sequence = '\x1bc';

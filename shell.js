@@ -2,14 +2,21 @@ import { Guthub } from '/guthub.js'
 
 export class Shell
 {
-    constructor(FS, terminal, compiler, editor, hash_auth_token, search_repo_path, helloworld, ui)
+    constructor(terminal, editor, hash_auth_token, search_repo_path, helloworld, paths, ui)
     {
         this.home = '/home/web_user';
+        this.tic_ = 0;
+        this.pdf_path = '';
+        this.current_terminal_line = '';
+        this.FS = null;
+        this.guthub = null;
         this.terminal = terminal;
-        this.FS = FS;
-        this.compiler = compiler;
         this.editor = editor;
         this.ui = ui;
+        this.paths = paths;
+        this.helloworld = helloworld;
+        this.compiler = new Worker(paths.busytex_worker_js);
+        this.log = ui.log;
         
         this.github_auth_token = hash_auth_token || ''
         if(this.github_auth_token.length > 1)
@@ -18,20 +25,139 @@ export class Shell
         this.github_https_path = search_repo_path || '';
         if(this.github_https_path.length > 1)
             this.github_https_path = 'https://github.com' + this.github_https_path.slice(1);
-        
-        this.guthub = new Guthub(this.FS, this.github_auth_token, terminal.println);
-        this.tic_ = 0;
-        this.pdf_path = '';
+       
+        this.compiler.onmessage = this.oncompilermessage;
+        this.terminal.on('key', this.onkey.bind(this));
+    }
+
+    terminal_println(line)
+    {
+        this.terminal.write((line || '') + '\r\n');
+    }
+
+    terminal_prompt()
+    {
+        return this.terminal.write('\x1B[1;3;31memscripten\x1B[0m:' + this.pwd(true) + '$ ');
+    }
+
+    async onkey(key, ev)
+    {
+        const ok = 'ok!';
+        if(ev.keyCode == 8)
+        {
+            if(this.current_terminal_line.length > 0)
+            {
+                this.current_terminal_line = this.current_terminal_line.slice(0, this.current_terminal_line.length - 1);
+                this.terminal.write('\b \b');
+            }
+        }
+        else if(ev.keyCode == 13)
+        {
+            this.terminal_println();
+            const [cmd, arg] = this.current_terminal_line.split(' ');
+            try
+            {
+                if (cmd == '')
+                {
+                }
+                else if(cmd == 'clear')
+                {
+                    this.clear();
+                }
+                else if(cmd == 'help')
+                {
+                    this.terminal_println(this.help().join(' '));
+                }
+                else if(cmd == 'download')
+                {
+                    this.download(arg);
+                    this.terminal_println(ok);
+                }
+                else if(cmd == 'upload')
+                {
+                    this.terminal_println(await this.upload(arg));
+                }
+                else if(cmd == 'latexmk')
+                {
+                    await this.latexmk(arg);
+                }
+                else if(cmd == 'pwd')
+                {
+                    this.terminal_println(this.pwd());
+                }
+                else if(cmd == 'ls')
+                {
+                    const res = this.ls(arg);
+                    if(res.length > 0)
+                        this.terminal_println(res.join(' '));
+                }
+                else if(cmd == 'mkdir')
+                {
+                    this.mkdir(arg);
+                }
+                else if(cmd == 'cd')
+                {
+                    this.cd(arg);
+                }
+                else if(cmd == 'clone')
+                {
+                    await this.clone(arg);
+                }
+                else if(cmd == 'push')
+                {
+                    await this.push(arg);
+                    this.terminal_println(ok);
+                }
+                else if(cmd == 'open')
+                {
+                    this.open(arg);
+                }
+                else if(cmd == 'save')
+                {
+                    this.save(arg, this.editor.getModel().getValue());
+                }
+                else
+                {
+                    this.terminal_println(cmd + ': command not found');
+                }
+            }
+            catch(err)
+            {
+                this.terminal_println('Error: ' + err.message);
+            }
+            this.terminal_prompt();
+            this.current_terminal_line = '';
+        }
+        else
+        {
+            this.current_terminal_line += key;
+            this.terminal.write(key);
+        }
+    }
+
+    oncompilermessage(e)
+    {
+        const {pdf, log} = e.data;
+        if(pdf)
+        {
+            this.toc();
+            this.FS.writeFile(this.pdf_path, pdf);
+            this.open(this.pdf_path, pdf);
+        }
+        else if(log)
+        {
+            this.log(log);
+        }
     }
 
     async run()
     {
-        this.FS.chdir(this.home);
+        this.compiler.postMessage(this.paths);
         
         this.open('helloworld.pdf', this.helloworld);
         
         await this.onload();
-        this.terminal.prompt();
+        this.terminal_prompt();
     }
 
     tic()
@@ -43,11 +169,15 @@ export class Shell
     {
         const elapsed = (performance.now() - this.tic_) / 1000.0;
         
-        this.terminal.println(`Elapsed time: ${elapsed.toFixed(2)} sec`);
+        this.terminal_println(`Elapsed time: ${elapsed.toFixed(2)} sec`);
     }
 
     async onload()
     {
+        const Module = await emscriptenfs(modularized_module(null, () =>  {}, this.log));
+        this.FS = Module.FS;
+        this.FS.chdir(this.home);
+        this.guthub = new Guthub(this.FS, this.github_auth_token, this.terminal_println);
         if(this.github_https_path.length > 0)
         {
             const repo_path = await this.clone(this.github_https_path);
@@ -153,10 +283,6 @@ export class Shell
         const files = traverse(project_dir, '.');
         this.pdf_path = pdf_path;
         this.compiler.postMessage({files : files, main_tex_path : main_tex_path});
-        
-        //const pdf = await this.compiler.compile(files, main_tex_path, bibtex);
-        //this.FS.writeFile(pdf_path, pdf);
-        //this.open(pdf_path, pdf);
     }
 
     async upload(file_path)
@@ -179,18 +305,7 @@ export class Shell
           mime = mime || "application/octet-stream";
 
           let content = this.FS.readFile(file_path);
-          console.log(`Offering download of "${file_path}", with ${content.length} bytes...`);
-          var a = document.createElement('a');
-          a.download = file_path;
-          a.href = URL.createObjectURL(new Blob([content], {type: mime}));
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-
-          setTimeout(() => {
-              document.body.removeChild(a);
-              URL.revokeObjectURL(a.href);
-          }, 2000);
+          this.ui.create_and_click_download_link(file_path, content, mime);
     }
     
     async clone(https_path)
@@ -205,3 +320,40 @@ export class Shell
         await this.guthub.push(relative_file_path, 'guthub');
     }
 }
+
+function modularized_module(thisProgram, preRun, println)
+{
+    const Module =
+    {
+        noInitialRun : true,
+
+        thisProgram : thisProgram,
+
+        preRun : [preRun],
+        
+        print(text) 
+        {
+            Module.setStatus('stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+
+        printErr(text)
+        {
+            Module.setStatus('stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+        },
+        
+        setStatus(text)
+        {
+            println((this.statusPrefix || '') + text);
+        },
+        
+        monitorRunDependencies(left)
+        {
+            this.totalDependencies = Math.max(this.totalDependencies, left);
+            Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        },
+        
+        totalDependencies: 0,
+    };
+    return Module;
+}
+
