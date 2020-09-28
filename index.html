@@ -49,16 +49,16 @@
     </style>
   </head>
   <body>
-    <div style="display: flex; height: 70%">
+    <div style="display: flex; height: 85%">
       <div id="editor"></div>
       <div id="viewer">
         <iframe id="pdfpreview"></iframe>
         <img hidden id="imgpreview"></img>
       </div>
     </div>
-    <div style="display: flex; flex-direction: column; height: 30%">
-      <div id="terminal"></div>
-      <textarea
+    <div style="display: flex; flex-direction: row; height: 15%">
+      <div id="terminal" style="height:100%"></div>
+      <textarea style="height:100%"
         name="status"
         id="status"
         cols="1"
