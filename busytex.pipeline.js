@@ -35,7 +35,7 @@ BusytexDataLoader =
 
 class BusytexPipeline
 {
-    constructor(busytex_js, busytex_wasm, texlive_js, print, script_loader)
+    constructor(busytex_js, busytex_wasm, texlive_js, texmf_local, print, script_loader)
     {
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
         this.em_module_promise = script_loader(busytex_js);
@@ -46,7 +46,7 @@ class BusytexPipeline
         this.project_dir = '/home/web_user/project_dir';
         this.bin_busytex = '/bin/busytex';
         this.fmt_latex = '/latex.fmt';
-        this.dir_texmfdist = '/texlive/texmf-dist:/texmf/texmf-dist:';
+        this.dir_texmfdist = '/texlive/texmf-dist:/texmf/texmf-dist:' + texmf_local.join(':') + ':';
         this.cnf_texlive = '/texmf.cnf';
         this.dir_cnf = '/';
         this.dir_fontconfig = '/fontconfig';
@@ -90,9 +90,9 @@ class BusytexPipeline
         }
 
         const print = this.print;
-        const wasm_module = await this.wasm_module_promise;
-        const em_module = await this.em_module_promise;
-        //const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
+        //const wasm_module = await this.wasm_module_promise;
+        //const em_module = await this.em_module_promise;
+        const [wasm_module, em_module] = await Promise.all([this.wasm_module_promise, this.em_module_promise]);
 
         const Module =
         {

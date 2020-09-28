@@ -1,15 +1,16 @@
-#TODO: native busytex
-#TODO: CSFINPUT/fontconfig.conf - do sth about native version
+#TODO: support local texmf directory
+#TODO: PROXYFS
+#TODO: extra packages: https://packages.ubuntu.com/groovy/all/texlive-latex-recommended/filelist, https://packages.ubuntu.com/bionic/all/texlive-latex-extra/filelist
+#TOOD: caching for cloning
+
+#TODO: native busytex + CSFINPUT/fontconfig.conf
 #TODO: abspath/realpath instead of ROOT
 #TODO: location of hyphen.cfg file? https://tex.loria.fr/ctan-doc/macros/latex/doc/html/cfgguide/node11.html
 
 #TODO: custom binaries for install-tl
 #TODO: enable tlmgr customization
 
-#TODO: support several data packages: eager and lazy ones
-#TODO: support local texmf directory
-#TODO: custom FS that could work with package zip archvies (CTAN?)
-#TODO: custom FS to share FS between runs
+#TODO: custom FS that could work with package zip archvies (CTAN? ftp://tug.org/texlive/Contents/live/texmf-dist/)
 #TODO: https://github.com/emscripten-core/emscripten/issues/11709#issuecomment-663901019
 # https://github.com/emscripten-core/emscripten/blob/master/src/library_idbfs.js#L21
 # https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages
@@ -18,6 +19,8 @@
 # $@ is lhs
 # $< is rhs
 # $* is captured % (pattern)
+
+URL_UBUNTU_RELEASE = https://packages.ubuntu.com/groovy/
 
 URL_texlive = https://github.com/TeX-Live/texlive-source/archive/9ed922e7d25e41b066f9e6c973581a4e61ac0328.tar.gz
 URL_expat = https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat-2.2.9.tar.gz
@@ -29,6 +32,7 @@ URL_TEXLIVE_TLPDB = ftp://tug.org/texlive/historic/2020/texlive-20200406-tlpdb-f
 
 ROOT := $(CURDIR)
 EMROOT := $(dir $(shell which emcc))
+PYTHON = python3
 
 TEXLIVE_BUILD_DIR=$(ROOT)/build/wasm/texlive
 WEB2C_NATIVE_TOOLS_DIR=$(ROOT)/build/native/texlive/texk/web2c
@@ -74,9 +78,9 @@ CFLAGS_native_fontconfig_FREETYPE = -I$(ROOT)/build/native/texlive/libs/freetype
 LIBS_native_fontconfig_FREETYPE = -L$(ROOT)/build/native/texlive/libs/freetype2/ -lfreetype
 
 # EM_COMPILER_WRAPPER / EM_COMPILER_LAUNCHER feature request: https://github.com/emscripten-core/emscripten/issues/12340
-CCSKIP_wasm_icu = python3 $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata --
-CCSKIP_wasm_freetype2 = python3 $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
-CCSKIP_wasm_xetex = python3 $(ROOT)/busytexcc.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tie xetex) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
+CCSKIP_wasm_icu = $(PYTHON) $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata --
+CCSKIP_wasm_freetype2 = $(PYTHON) $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
+CCSKIP_wasm_xetex = $(PYTHON) $(ROOT)/busytexcc.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tie xetex) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
 
 OPTS_wasm_icu_configure = CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
 OPTS_wasm_icu_make = -e PKGDATA_OPTS="$(PKGDATAFLAGS_wasm_icu)" -e CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" -e CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
@@ -270,7 +274,7 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 	#https://github.com/emscripten-core/emscripten/issues/12214
 	mkdir -p $(dir $@)
 	echo > build/empty
-	python3 $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
+	$(PYTHON) $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
 		--lz4 --use-preload-cache \
 		--preload build/empty@/bin/busytex \
 		--preload build/wasm/fontconfig.conf@/fontconfig/texlive.conf \
@@ -283,7 +287,7 @@ build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist bui
 dist/texlive-lazy.js:
 	mkdir -p $(dir $@)
 	rm -rf dist/texmf || true
-	python3 lazy_packager.py dist --js-output=$@ --export-name=BusytexDataLoader \
+	$(PYTHON) lazy_packager.py dist --js-output=$@ --export-name=BusytexDataLoader \
 		--preload build/texlive-full/texmf-dist/tex/latex/titlesec@/texmf/texmf-dist/tex/latex/titlesec \
 		--preload build/texlive-full/texmf-dist/tex/latex/xcolor@/texmf/texmf-dist/tex/latex/xcolor \
 		--preload build/texlive-full/texmf-dist/tex/latex/etoolbox@/texmf/texmf-dist/tex/latex/etoolbox \
@@ -291,6 +295,12 @@ dist/texlive-lazy.js:
 		--preload build/texlive-full/texmf-dist/tex/latex/textpos@/texmf/texmf-dist/tex/latex/textpos \
 		--preload build/texlive-full/texmf-dist/tex/latex/ms@/texmf/texmf-dist/tex/latex/ms \
 		--preload build/texlive-full/texmf-dist/tex/latex/parskip@/texmf/texmf-dist/tex/latex/parksip
+
+build/wasm/texlive-latex-%.js:
+	mkdir -p $(dir $@)
+	$(PYTHON) $(EMROOT)/tools/file_packager.py $(basename $@).data --js-output=$@ --export-name=BusytexDataLoader \
+		--lz4 --use-preload-cache \
+		$(shell $(PYTHON) ubuntu_package_preload.py --texmf build/texlive-full --url $(URL_UBUNTU_RELEASE) --package texlive-latex-$*)
 
 ################################################################################################################
 
@@ -326,19 +336,27 @@ native:
 
 #.PHONY: tds-basic tds-small tds-full
 tds-%:
-	#make build/install-tl/install-tl
-	#make build/texlive-$*.profile
-	#make build/texlive-$*/texmf-dist
+	make build/install-tl/install-tl
+	make build/texlive-$*.profile
+	make build/texlive-$*/texmf-dist
 	make build/format-$*/latex.fmt
 	make build/wasm/fontconfig.conf
-	make build/wasm/texlive-$*.js
 
 .PHONY: tds
 tds:
 	make tds-basic
 	make tds-small
 	make tds-medium
+	make build/wasm/
 	# make tds-full
+
+.PHONY: tds-wasm
+tds-wasm:
+	#make build/wasm/texlive-basic.js
+	#make build/wasm/texlive-small.js
+	#make build/wasm/texlive-medium.js
+	make build/wasm/texlive-latex-recommended.js
+	make build/wasm/texlive-latex-extra.js
 
 .PHONY: wasm
 wasm:
@@ -396,7 +414,8 @@ clean:
 .PHONY: dist
 dist:
 	mkdir -p $@
-	cp build/wasm/busytex.js build/wasm/busytex.wasm build/wasm/texlive-*.js build/wasm/texlive-*.data $@
+	cp build/wasm/busytex.js build/wasm/busytex.wasm $@
+	cp build/wasm/texlive-*.js build/wasm/texlive-*.data $@
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
 .PHONY: dist/emscriptenfs.js

@@ -541,13 +541,14 @@
         };
         
         const Module = await emscriptenfs(modularized_module(null, () =>  {}, window.println));
-        window.FS = Module.FS;
-        window.FS.chdir('/home/web_user')
+        const FS = Module.FS;
+        cosnt FS.chdir('/home/web_user')
 
         const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm';
         const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
-        
-        //window.compiler = new BusytexPipeline(busytex_js, busytex_wasm, window.println, BusytexDefaultScriptLoader);
+        const texlive_js = ['/dist/texlive-basic.js'];
+        const texmf_local = './texmf';
+
         window.compiler = new Worker(busytex_worker_js);
         window.compiler.onmessage = e =>
         {
@@ -563,9 +564,9 @@
                 window.println(log);
             }
         }
-        window.compiler.postMessage({busytex_js : busytex_js, busytex_wasm : busytex_wasm});
+        window.compiler.postMessage({busytex_js : busytex_js, busytex_wasm : busytex_wasm, texlive_js : texlive_js, texmf_local : texmf_local});
               
-        window.shell = new Shell(window.FS, window.terminal, window.compiler, window.terminal.println);
+        window.shell = new Shell(FS, window.terminal, window.compiler, window.terminal.println);
 
         window.editor.layout()
         window.terminal.fit()
