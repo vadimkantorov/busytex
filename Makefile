@@ -1,6 +1,6 @@
+#TODO: verbose option
 #TODO: check github serving
 #TODO: caching for cloning
-#TODO: return full log along with pdf
 #TODO: configure DataLoader externally
 #TODO: rate limit error: documentation_url: "https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"
 #TODO: message: "API rate limit exceeded for 92.169.44.67. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)"

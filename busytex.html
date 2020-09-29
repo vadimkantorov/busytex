@@ -117,7 +117,7 @@ async function onclick_()
             worker.terminate();
         }
 
-        else if(log)
+        if(print)
         {
             let statusElement = document.getElementById('status');
             const ansi_reset_sequence = '\x1bc';
@@ -125,7 +125,7 @@ async function onclick_()
                 statusElement.value = '';
             else
             {
-                statusElement.value += log;
+                statusElement.value += print;
                 statusElement.value += '\n';
                 statusElement.scrollTop = statusElement.scrollHeight;
             }
