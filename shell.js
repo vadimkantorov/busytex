@@ -7,6 +7,7 @@ export class Shell
         this.home = '/home/web_user';
         this.tic_ = 0;
         this.pdf_path = '';
+        this.log_path = '';
         this.current_terminal_line = '';
         this.FS = null;
         this.guthub = null;
@@ -137,16 +138,21 @@ export class Shell
 
     oncompilermessage(e)
     {
-        const {pdf, log} = e.data;
+        const {pdf, log, print} = e.data;
         if(pdf)
         {
             this.toc();
             this.FS.writeFile(this.pdf_path, pdf);
             this.open(this.pdf_path, pdf);
         }
-        else if(log)
+        if(log)
         {
-            this.log(log);
+            this.toc();
+            this.FS.writeFile(this.log_path, log);
+        }
+        if(print)
+        {
+            this.log(print);
         }
     }
 
@@ -271,7 +277,9 @@ export class Shell
             return entries;
         };
 
-        const pdf_path = tex_path.replace('.tex', '.pdf');
+        this.pdf_path = tex_path.replace('.tex', '.pdf');
+        this.log_path = log_path.replace('.tex', '.log');
+        
         const cwd = this.FS.cwd();
         console.assert(tex_path.endsWith('.tex'));
         console.assert(cwd.startsWith(this.home));
@@ -281,7 +289,6 @@ export class Shell
         const main_tex_path = source_path.slice(project_dir.length + 1);
 
         const files = traverse(project_dir, '.');
-        this.pdf_path = pdf_path;
         this.compiler.postMessage({files : files, main_tex_path : main_tex_path});
     }
 

@@ -29,19 +29,32 @@ BusytexDataLoader =
 
     locateFile(remote_package_name)
     {
-        return '/dist/' + remote_package_name
+        for(const data_package_js of this.data_packages)
+        {
+            const data_file = data_package_js.replace('.js', '.data');
+            if(data_file.endsWith(remote_package_name))
+                return data_file;
+        }
+        return null;
     },
+
+    data_packages : []
 };
 
 class BusytexPipeline
 {
     constructor(busytex_js, busytex_wasm, texlive_js, texmf_local, print, script_loader)
     {
+        this.print = print;
         this.wasm_module_promise = fetch(busytex_wasm).then(WebAssembly.compileStreaming);
         this.em_module_promise = script_loader(busytex_js);
+        
+        BusytexDataLoader.data_packages = []
         for(const data_package_js of texlive_js)
+        {
             this.em_module_promise = this.em_module_promise.then(_ => script_loader(data_package_js));
-        this.print = print;
+            BusytexDataLoader.data_packages.push(data_package_js);
+        }
         
         this.ansi_reset_sequence = '\x1bc';
         
@@ -63,7 +76,7 @@ class BusytexPipeline
             ENV.FONTCONFIG_FILE = this.conf_fontconfig;
         };
 
-        this.init_project_dir = (PATH, FS) =>
+        this.init_project_dir = (files, source_dir) => (PATH, FS) =>
         {
             FS.mkdir(this.project_dir);
             for(const {path, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
@@ -163,23 +176,25 @@ class BusytexPipeline
                 Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
             },
         };
+
         const Module_ = await busytex(Module);
         let exit_code = 0;
         const mem = Uint8Array.from(Module_.HEAPU8);
-        for(const args of arguments_array)
+        for(let i = 0; i < arguments_array.length; i++)
         {
-            exit_code = NOCLEANUP_callMain(Module_, args, print);
+            exit_code = NOCLEANUP_callMain(Module_, arguments_array[i], print);
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
 
             if(exit_code != 0 && exit_early == true)
                 break;
             
-            Module_.HEAPU8.set(mem);
+            if(i < arguments_array.length - 1)
+                Module_.HEAPU8.set(mem);
         }
         return [Module_.FS, exit_code];
     }
 
-    async compile(files, main_tex_path, bibtex, exit_early)
+    async compile(files, main_tex_path, bibtex, exit_early, verbose)
     {
         const source_name = main_tex_path.slice(main_tex_path.lastIndexOf('/') + 1);
         const dirname = main_tex_path.slice(0, main_tex_path.length - source_name.length) || '.';
@@ -193,7 +208,7 @@ class BusytexPipeline
 
         const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
         const cmd_bibtex8 = ['bibtex8', aux_path]; 
-        const cmd_xdvipdfmx = ['xdvipdfmx', '-vv', '-o', pdf_path, xdv_path];
+        const cmd_xdvipdfmx = ['xdvipdfmx', '-o', pdf_path, xdv_path].concat(verbose ? ['-vv'] : []);
 
         this.print(this.ansi_reset_sequence);
         this.print(`New compilation started: [${main_tex_path}]`);
@@ -204,7 +219,7 @@ class BusytexPipeline
             exit_early = true;
 
         const cmds = bibtex == true ? [cmd_xetex, cmd_bibtex8, cmd_xetex, cmd_xetex, cmd_xdvipdfmx] : [cmd_xetex, cmd_xdvipdfmx];
-        [FS, exit_code] = await this.run(cmds, this.init_env, init_project_dir, exit_early);
+        const [FS, exit_code] = await this.run(cmds, this.init_env, this.init_project_dir(files, source_dir), exit_early);
 
         const pdf = exit_code == 0 ? FS.readFile(pdf_path, {encoding: 'binary'}) : null;
         const log = FS.readFile(log_path, {encoding : 'utf8'});

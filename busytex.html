@@ -4,6 +4,8 @@
 <label for="worker">Use Worker</label>
 <input type="checkbox" id="exit_early" name="exit_early" checked>
 <label for="exit_early">Exit Early</label>
+<input type="checkbox" id="verbose" name="verbose">
+<label for="verbose">Verbose</label>
 <input type="checkbox" id="bibtex" name="bibtex" checked>
 <label for="bibtex">Run BibTeX</label>
 <select name="scheme" id="scheme">
@@ -47,12 +49,13 @@ Blablabla said Nobody ~\cite{Nobody06}.
 <script>
 
 const busytex_js = '/dist/busytex.js', busytex_wasm = '/dist/busytex.wasm', texlive_recommended_js = '/dist/texlive-latex-recommended.js', texlive_extra_js = '/dist/texlive-latex-extra.js', texlive_scheme_js = '/dist/texlive-{scheme}.js';//, '/dist/texlive-lazy.js'];
-const busytex_worker_js = '/busytex.worker.js', busytex_pipeline_js = '/busytex.pipeline.js';
+const busytex_worker_js = '/busytex_worker.js', busytex_pipeline_js = '/busytex_pipeline.js';
 
 async function onclick_()
 {
     const use_worker = document.getElementById('worker').checked;
     const exit_early = document.getElementById('exit_early').checked;
+    const use_verbose = document.getElementById('verbose').checked;
     const use_bibtex = document.getElementById('bibtex').checked;
     const use_recommended = document.getElementById('texlive_latex_recommended').checked;
     const use_extra = document.getElementById('texlive_latex_extra').checked; 
@@ -75,7 +78,7 @@ async function onclick_()
     {
         worker = 
         {
-            async postMessage({files, main_tex_path, bibtex, busytex_js, busytex_wasm, texmf_local})
+            async postMessage({files, main_tex_path, bibtex, verbose, busytex_js, busytex_wasm, texmf_local})
             {
                 if(busytex_js && busytex_wasm && texlive_js && texmf_local)
                 {
@@ -92,7 +95,7 @@ async function onclick_()
                 else if(files && this.pipeline)
                 {
                     const pipeline = await this.pipeline;
-                    const pdf = await pipeline.compile(files, main_tex_path, bibtex);
+                    const pdf = await pipeline.compile(files, main_tex_path, bibtex, exit_early, verbose);
                     this.onmessage({data : {pdf : pdf}});
                 }
             },
@@ -136,7 +139,7 @@ async function onclick_()
     tic = performance.now();
     const tex = document.getElementById('tex').value, bib = document.getElementById('bib').value;
     const files = [{path : 'example.tex', contents : tex}, {path : 'example.bib', contents : bib}];
-    worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : use_bibtex, exit_early : exit_early});
+    worker.postMessage({files : files, main_tex_path : 'example.tex', bibtex : use_bibtex, exit_early : exit_early, verbose : use_verbose});
 }
 
 function clearlog()
