@@ -104,7 +104,7 @@ async function onclick_()
         }
     }
 
-    worker.onmessage = ({ data : {pdf, log} }) =>
+    worker.onmessage = ({ data : {pdf, log, print} }) =>
     {
         if(pdf)
         {
@@ -121,7 +121,7 @@ async function onclick_()
         {
             let statusElement = document.getElementById('status');
             const ansi_reset_sequence = '\x1bc';
-            if(log == ansi_reset_sequence)
+            if(print == ansi_reset_sequence)
                 statusElement.value = '';
             else
             {

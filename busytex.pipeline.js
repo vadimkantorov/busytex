@@ -64,7 +64,7 @@ class BusytexPipeline
         };
     }
 
-    async run(arguments_array, init_env, init_fs, exit_early, pre_run, post_run)
+    async run(arguments_array, init_env, init_fs, exit_early, pre_run)
     {
         const NOCLEANUP_callMain = (Module, args) =>
         {
@@ -153,6 +153,7 @@ class BusytexPipeline
         };
         const Module_ = await busytex(Module);
         let exit_code = 0;
+        const mem = Uint8Array.from(Module_.HEAPU8);
         for(const args of arguments_array)
         {
             exit_code = NOCLEANUP_callMain(Module_, args, print);
@@ -160,9 +161,8 @@ class BusytexPipeline
 
             if(exit_code != 0 && exit_early == true)
                 break;
-
-            if(post_run && args == arguments_array[0])
-                post_run(Module_.FS);
+            
+            Module_.HEAPU8.set(mem);
         }
         return [Module_.FS, exit_code];
     }
@@ -220,13 +220,13 @@ class BusytexPipeline
         if(bibtex == true)
         {
             const pre_run = true;
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8, cmd_xetex, cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early, pre_run);
             
-            if(exit_code == 0 || exit_early != true)
-                [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, proxy_project_dir, true, pre_run);
-            
-            if(exit_code == 0 || exit_early != true)
-                [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, proxy_project_dir, exit_early, pre_run);
+            //[_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
+            //if(exit_code == 0 || exit_early != true)
+            //    [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, proxy_project_dir, true, pre_run);
+            //if(exit_code == 0 || exit_early != true)
+            //    [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, proxy_project_dir, exit_early, pre_run);
         }
         else
         {
@@ -561,7 +561,7 @@ stream_ops: {
 	} else if (whence === SEEK_END) {
 	  if (FS.isFile(stream.node.mode)) {
 		try {
-		  var stat_size = stream.nfd.node.usedBytes;
+		  const stat_size = stream.node.node_ops.getattr(stream.node).size;
 		  position += stat_size;
 		} catch (e) {
 		  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
