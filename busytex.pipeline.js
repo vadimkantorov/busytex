@@ -64,7 +64,7 @@ class BusytexPipeline
         };
     }
 
-    async run(arguments_array, init_env, init_fs, exit_early, pre_run)
+    async run(arguments_array, init_env, init_fs, exit_early, pre_run, post_run)
     {
         const NOCLEANUP_callMain = (Module, args) =>
         {
@@ -117,7 +117,7 @@ class BusytexPipeline
                 }
 
                 init_env(Module.ENV);
-                init_fs(Module, Module.FS);
+                init_fs(Module.PATH, Module.FS);
             }],
 
             instantiateWasm(imports, successCallback)
@@ -155,12 +155,14 @@ class BusytexPipeline
         let exit_code = 0;
         for(const args of arguments_array)
         {
-            console.log(Module_.FS.cwd(), Module_.ENV);
             exit_code = NOCLEANUP_callMain(Module_, args, print);
             Module_.setStatus(`EXIT_CODE: ${exit_code}`);
 
             if(exit_code != 0 && exit_early == true)
                 break;
+
+            if(post_run && args == arguments_array[0])
+                post_run(Module_.FS);
         }
         return [Module_.FS, exit_code];
     }
@@ -178,26 +180,12 @@ class BusytexPipeline
 
         const cmd_xetex = ['xetex', '--interaction=nonstopmode', '--halt-on-error', '--no-pdf', '--fmt', this.fmt_latex, tex_path];
         const cmd_bibtex8 = ['bibtex8', aux_path]; 
-        const cmd_xdvipdfmx = ['xdvipdfmx', xdv_path];
+        const cmd_xdvipdfmx = ['xdvipdfmx', '-vv', '-o', pdf_path, xdv_path];
 
         let [_FS_, exit_code] = [null, 0]
-        
-        const copytree = (file_path, src_FS, dst_FS) =>
-        {
-            dst_FS.mkdir(file_path);
-            const files = src_FS.lookupPath(file_path).node.contents;
-            for(const file_name of Object.keys(files))
-            {
-                const file = files[file_name];
-                const path = `${file_path}/${file_name}`;
-                if(!file.isFolder)
-                    dst_FS.writeFile(path, src_FS.readFile(path, {encoding : 'binary'}));
-                else
-                    copytree(path, src_FS, dst_FS);
-            }
-        }
-        
-        const init_project_dir = (Module, FS) =>
+        let __FS__ = null;
+
+        const init_project_dir = (PATH, FS) =>
         {
             FS.mkdir(this.project_dir);
             for(const {path, contents} of files.sort((lhs, rhs) => lhs['path'] < rhs['path'] ? -1 : 1))
@@ -212,11 +200,10 @@ class BusytexPipeline
             FS.chdir(source_dir);
         };
 
-        const copy_project_dir = (Module, FS) =>
+        const proxy_project_dir = (PATH, FS) =>
         {
             FS.mkdir(this.project_dir);
-            //FS.mount(Module.PROXYFS, { root: this.project_dir , fs: _FS_}, this.project_dir);
-            copytree(this.project_dir, _FS_, FS);
+            FS.mount(BusytexPROXYFS(PATH, FS), { root: this.project_dir , fs: _FS_}, this.project_dir);
             FS.chdir(source_dir);
         };
         
@@ -235,19 +222,359 @@ class BusytexPipeline
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
             
             if(exit_code == 0 || exit_early != true)
-                [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, copy_project_dir, true, pre_run);
+                [__FS__, exit_code] = await this.run([cmd_xetex], this.init_env, proxy_project_dir, true, pre_run);
             
             if(exit_code == 0 || exit_early != true)
-                [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, copy_project_dir, exit_early, pre_run);
+                [__FS__, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, proxy_project_dir, exit_early, pre_run);
         }
         else
         {
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early);
+            [__FS__, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early);
         }
 
         if(exit_code == 0) 
-            return _FS_.readFile(pdf_path, {encoding: 'binary'});
+            return __FS__.readFile(pdf_path, {encoding: 'binary'});
         
         return null;
     }
 }
+
+
+BusytexPROXYFS = (PATH, FS) => {
+    const ERRNO_CODES = {
+        E2BIG: 1,
+        EACCES: 2,
+        EADDRINUSE: 3,
+        EADDRNOTAVAIL: 4,
+        EADV: 122,
+        EAFNOSUPPORT: 5,
+        EAGAIN: 6,
+        EALREADY: 7,
+        EBADE: 113,
+        EBADF: 8,
+        EBADFD: 127,
+        EBADMSG: 9,
+        EBADR: 114,
+        EBADRQC: 103,
+        EBADSLT: 102,
+        EBFONT: 101,
+        EBUSY: 10,
+        ECANCELED: 11,
+        ECHILD: 12,
+        ECHRNG: 106,
+        ECOMM: 124,
+        ECONNABORTED: 13,
+        ECONNREFUSED: 14,
+        ECONNRESET: 15,
+        EDEADLK: 16,
+        EDEADLOCK: 16,
+        EDESTADDRREQ: 17,
+        EDOM: 18,
+        EDOTDOT: 125,
+        EDQUOT: 19,
+        EEXIST: 20,
+        EFAULT: 21,
+        EFBIG: 22,
+        EHOSTDOWN: 142,
+        EHOSTUNREACH: 23,
+        EIDRM: 24,
+        EILSEQ: 25,
+        EINPROGRESS: 26,
+        EINTR: 27,
+        EINVAL: 28,
+        EIO: 29,
+        EISCONN: 30,
+        EISDIR: 31,
+        EL2HLT: 112,
+        EL2NSYNC: 156,
+        EL3HLT: 107,
+        EL3RST: 108,
+        ELIBACC: 129,
+        ELIBBAD: 130,
+        ELIBEXEC: 133,
+        ELIBMAX: 132,
+        ELIBSCN: 131,
+        ELNRNG: 109,
+        ELOOP: 32,
+        EMFILE: 33,
+        EMLINK: 34,
+        EMSGSIZE: 35,
+        EMULTIHOP: 36,
+        ENAMETOOLONG: 37,
+        ENETDOWN: 38,
+        ENETRESET: 39,
+        ENETUNREACH: 40,
+        ENFILE: 41,
+        ENOANO: 104,
+        ENOBUFS: 42,
+        ENOCSI: 111,
+        ENODATA: 116,
+        ENODEV: 43,
+        ENOENT: 44,
+        ENOEXEC: 45,
+        ENOLCK: 46,
+        ENOLINK: 47,
+        ENOMEDIUM: 148,
+        ENOMEM: 48,
+        ENOMSG: 49,
+        ENONET: 119,
+        ENOPKG: 120,
+        ENOPROTOOPT: 50,
+        ENOSPC: 51,
+        ENOSR: 118,
+        ENOSTR: 100,
+        ENOSYS: 52,
+        ENOTBLK: 105,
+        ENOTCONN: 53,
+        ENOTDIR: 54,
+        ENOTEMPTY: 55,
+        ENOTRECOVERABLE: 56,
+        ENOTSOCK: 57,
+        ENOTSUP: 138,
+        ENOTTY: 59,
+        ENOTUNIQ: 126,
+        ENXIO: 60,
+        EOPNOTSUPP: 138,
+        EOVERFLOW: 61,
+        EOWNERDEAD: 62,
+        EPERM: 63,
+        EPFNOSUPPORT: 139,
+        EPIPE: 64,
+        EPROTO: 65,
+        EPROTONOSUPPORT: 66,
+        EPROTOTYPE: 67,
+        ERANGE: 68,
+        EREMCHG: 128,
+        EREMOTE: 121,
+        EROFS: 69,
+        ESHUTDOWN: 140,
+        ESOCKTNOSUPPORT: 137,
+        ESPIPE: 70,
+        ESRCH: 71,
+        ESRMNT: 123,
+        ESTALE: 72,
+        ESTRPIPE: 135,
+        ETIME: 117,
+        ETIMEDOUT: 73,
+        ETOOMANYREFS: 141,
+        ETXTBSY: 74,
+        EUNATCH: 110,
+        EUSERS: 136,
+        EWOULDBLOCK: 6,
+        EXDEV: 75,
+        EXFULL: 115,
+    };
+    const PROXYFS = 
+    {
+mount: function (mount) {
+  return PROXYFS.createNode(null, '/', mount.opts.fs.lstat(mount.opts.root).mode, 0);
+},
+createNode: function (parent, name, mode, dev) {
+  if (!FS.isDir(mode) && !FS.isFile(mode) && !FS.isLink(mode)) {
+	throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+  }
+  var node = FS.createNode(parent, name, mode);
+  node.node_ops = PROXYFS.node_ops;
+  node.stream_ops = PROXYFS.stream_ops;
+  return node;
+},
+realPath: function (node) {
+  var parts = [];
+  while (node.parent !== node) {
+	parts.push(node.name);
+	node = node.parent;
+  }
+  parts.push(node.mount.opts.root);
+  parts.reverse();
+  return PATH.join.apply(null, parts);
+},
+node_ops: {
+  getattr: function(node) {
+	var path = PROXYFS.realPath(node);
+	var stat;
+	try {
+	  stat = node.mount.opts.fs.lstat(path);
+	} catch (e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+	return {
+	  dev: stat.dev,
+	  ino: stat.ino,
+	  mode: stat.mode,
+	  nlink: stat.nlink,
+	  uid: stat.uid,
+	  gid: stat.gid,
+	  rdev: stat.rdev,
+	  size: stat.size,
+	  atime: stat.atime,
+	  mtime: stat.mtime,
+	  ctime: stat.ctime,
+	  blksize: stat.blksize,
+	  blocks: stat.blocks
+	};
+  },
+  setattr: function(node, attr) {
+	var path = PROXYFS.realPath(node);
+	try {
+	  if (attr.mode !== undefined) {
+		node.mount.opts.fs.chmod(path, attr.mode);
+		// update the common node structure mode as well
+		node.mode = attr.mode;
+	  }
+	  if (attr.timestamp !== undefined) {
+		var date = new Date(attr.timestamp);
+		node.mount.opts.fs.utime(path, date, date);
+	  }
+	  if (attr.size !== undefined) {
+		node.mount.opts.fs.truncate(path, attr.size);
+	  }
+	} catch (e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  lookup: function (parent, name) {
+	try {
+	  var path = PATH.join2(PROXYFS.realPath(parent), name);
+	  var mode = parent.mount.opts.fs.lstat(path).mode;
+	  var node = PROXYFS.createNode(parent, name, mode);
+	  return node;
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  mknod: function (parent, name, mode, dev) {
+	var node = PROXYFS.createNode(parent, name, mode, dev);
+	// create the backing node for this in the fs root as well
+	var path = PROXYFS.realPath(node);
+	try {
+	  if (FS.isDir(node.mode)) {
+		node.mount.opts.fs.mkdir(path, node.mode);
+	  } else {
+		node.mount.opts.fs.writeFile(path, '', { mode: node.mode });
+	  }
+	} catch (e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+	return node;
+  },
+  rename: function (oldNode, newDir, newName) {
+	var oldPath = PROXYFS.realPath(oldNode);
+	var newPath = PATH.join2(PROXYFS.realPath(newDir), newName);
+	try {
+	  oldNode.mount.opts.fs.rename(oldPath, newPath);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  unlink: function(parent, name) {
+	var path = PATH.join2(PROXYFS.realPath(parent), name);
+	try {
+	  parent.mount.opts.fs.unlink(path);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  rmdir: function(parent, name) {
+	var path = PATH.join2(PROXYFS.realPath(parent), name);
+	try {
+	  parent.mount.opts.fs.rmdir(path);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  readdir: function(node) {
+	var path = PROXYFS.realPath(node);
+	try {
+	  return node.mount.opts.fs.readdir(path);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  symlink: function(parent, newName, oldPath) {
+	var newPath = PATH.join2(PROXYFS.realPath(parent), newName);
+	try {
+	  parent.mount.opts.fs.symlink(oldPath, newPath);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  readlink: function(node) {
+	var path = PROXYFS.realPath(node);
+	try {
+	  return node.mount.opts.fs.readlink(path);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+},
+stream_ops: {
+  open: function (stream) {
+	var path = PROXYFS.realPath(stream.node);
+	try {
+	  stream.nfd = stream.node.mount.opts.fs.open(path,stream.flags);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  close: function (stream) {
+	try {
+	  stream.node.mount.opts.fs.close(stream.nfd);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  read: function (stream, buffer, offset, length, position) {
+	try {
+	  return stream.node.mount.opts.fs.read(stream.nfd, buffer, offset, length, position);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  write: function (stream, buffer, offset, length, position) {
+	try {
+	  return stream.node.mount.opts.fs.write(stream.nfd, buffer, offset, length, position);
+	} catch(e) {
+	  if (!e.code) throw e;
+	  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+	}
+  },
+  llseek: function (stream, offset, whence) {
+ const SEEK_SET =	0;
+ const SEEK_CUR	=   1;
+ const SEEK_END	=   2;
+	var position = offset;
+	if (whence === SEEK_CUR) {
+	  position += stream.position;
+	} else if (whence === SEEK_END) {
+	  if (FS.isFile(stream.node.mode)) {
+		try {
+		  var stat_size = stream.nfd.node.usedBytes;
+		  position += stat_size;
+		} catch (e) {
+		  throw new FS.ErrnoError(ERRNO_CODES[e.code]);
+		}
+	  }
+	} 
+    if (position < 0) {
+                  throw new FS.ErrnoError(ERRNO_CODES.EINVAL);
+                }
+	return position;
+  }
+}
+};
+return PROXYFS;
+};
+

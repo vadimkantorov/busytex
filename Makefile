@@ -1,5 +1,4 @@
 #TODO: check github serving
-#TODO: PROXYFS
 #TODO: caching for cloning
 #TODO: return full log along with pdf
 #TODO: configure DataLoader externally
@@ -20,6 +19,10 @@
 # https://github.com/emscripten-core/emscripten/blob/master/src/library_idbfs.js#L21
 # https://en.wikibooks.org/wiki/LaTeX/Installing_Extra_Packages
 # https://github.com/emscripten-core/emscripten/pull/4737
+
+# https://ctan.crest.fr/tex-archive/macros/latex/contrib/
+# ftp://tug.org/texlive/Contents/live/texmf-dist/
+# http://tug.org/texmf-dist/
 
 # $@ is lhs
 # $< is rhs
@@ -223,6 +226,7 @@ build/native/texlive/texk/web2c/xetex:
 	$(MAKE_native) -C $(dir $@) xetex 
 
 build/wasm/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/wasm/texlive.configured
+	$(MAKE_wasm) -C $(dir $@) clean
 	$(MAKE_wasm) -C $(dir $@) $(OPTS_wasm_xdvipdfmx)
 	$(AR_wasm) -crs $@ $(dir $@)/*.o
 
@@ -312,7 +316,7 @@ build/wasm/texlive-latex-%.js:
 .PHONY:build/wasm/busytex.js
 build/wasm/busytex.js: 
 	mkdir -p $(dir $@)
-	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0  -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXPORT_NAME=$(notdir $(basename $@)) -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack", "LZ4", "PROXYFS"]' -lproxyfs.js  -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
+	emcc $(CFLAGS_OPT) -s TOTAL_MEMORY=$(TOTAL_MEMORY) -s EXIT_RUNTIME=0 -s INVOKE_RUN=0  -s ASSERTIONS=1 -s ERROR_ON_UNDEFINED_SYMBOLS=0 -s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXPORT_NAME=$(notdir $(basename $@)) -s EXPORTED_FUNCTIONS='["_main"]' -s EXPORTED_RUNTIME_METHODS='["callMain","FS", "ENV", "allocateUTF8OnStack", "LZ4", "PROXYFS", "PATH"]' -lproxyfs.js  -o $@ -lm $(addprefix build/wasm/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/wasm/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/wasm/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
