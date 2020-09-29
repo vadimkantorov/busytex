@@ -218,20 +218,9 @@ class BusytexPipeline
             exit_early = true;
 
         if(bibtex == true)
-        {
-            const pre_run = true;
-            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8, cmd_xetex, cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early, pre_run);
-            
-            //[_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8], this.init_env, init_project_dir, exit_early, pre_run);
-            //if(exit_code == 0 || exit_early != true)
-            //    [_FS_, exit_code] = await this.run([cmd_xetex], this.init_env, proxy_project_dir, true, pre_run);
-            //if(exit_code == 0 || exit_early != true)
-            //    [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, proxy_project_dir, exit_early, pre_run);
-        }
+            [_FS_, exit_code] = await this.run([cmd_xetex, cmd_bibtex8, cmd_xetex, cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early);
         else
-        {
             [_FS_, exit_code] = await this.run([cmd_xetex, cmd_xdvipdfmx], this.init_env, init_project_dir, exit_early);
-        }
 
         const pdf = exit_code == 0 ? _FS_.readFile(pdf_path, {encoding: 'binary'}) : null;
         const log = _FS_.readFile(log_path, {encoding : 'utf8'});
