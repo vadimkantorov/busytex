@@ -4,7 +4,7 @@
 #TODO: message: "API rate limit exceeded for 92.169.44.67. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)"
 #TODO: https://microsoft.github.io/monaco-editor/playground.html#interacting-with-the-editor-adding-an-action-to-an-editor-instance
 
-#TODO: native busytex + CSFINPUT/fontconfig.conf//'--csfile', '/bibtex/88591lat.csf'
+#TODO: native busytex: + CSFINPUT/fontconfig.conf//'--csfile', '/bibtex/88591lat.csf'
 #TODO: abspath/realpath instead of ROOT
 #TODO: location of hyphen.cfg file? https://tex.loria.fr/ctan-doc/macros/latex/doc/html/cfgguide/node11.html
 
@@ -102,16 +102,16 @@ OPTS_wasm_freetype2 = CC="$(CCSKIP_wasm_freetype2) emcc"
 OPTS_wasm_xetex = CC="$(CCSKIP_wasm_xetex) emcc $(CFLAGS_XETEX_wasm)" CXX="$(CCSKIP_wasm_xetex) em++ $(CFLAGS_XETEX_wasm)"
 OPTS_wasm_xdvipdfmx= CC="emcc $(CFLAGS_XDVIPDFMX_wasm)" CXX="em++ $(CFLAGS_XDVIPDFMX_wasm)"
 
-OPTS_native_xdvipdfmx= CC="$(CC) $(CFLAGS_XDVIPDFMX_native)" CXX="$(CXX) $(CFLAGS_XDVIPDFMX_native)"
+OPTS_native_xdvipdfmx= -e CFLAGS="$(CFLAGS_native_texlive) $(CFLAGS_XDVIPDFMX_native)" -e CPPFLAGS="$(CFLAGS_native_texlive) $(CFLAGS_XDVIPDFMX_native)"
 OPTS_native_bibtex = -e CFLAGS="$(CFLAGS_BIBTEX_native) $(CFLAGS_native_bibtex)" -e CXXFLAGS="$(CFLAGS_BIBTEX_native) $(CFLAGS_wasm_native)"
 OPTS_native_xetex = CC="$(CC) $(CFLAGS_XETEX_native)" CXX="$(CXX) $(CFLAGS_XETEX_native)"
 
-OBJ_XETEX = libmd5.a lib/lib.a synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o libxetex.a
+OBJ_XETEX = synctexdir/xetex-synctex.o xetex-xetexini.o xetex-xetex0.o xetex-xetex-pool.o xetexdir/xetex-xetexextra.o lib/lib.a libmd5.a libxetex.a
 OBJ_DVIPDF = texlive/texk/dvipdfm-x/xdvipdfmx.a
 OBJ_BIBTEX = texlive/texk/bibtex-x/bibtex8.a
 
 #texlive/libs/icu/icu-build/lib/libicuio.a texlive/libs/icu/icu-build/lib/libicui18n.a 
-OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a fontconfig/src/.libs/libfontconfig.a expat/libexpat.a 
+OBJ_DEPS = texlive/libs/harfbuzz/libharfbuzz.a texlive/libs/graphite2/libgraphite2.a texlive/libs/teckit/libTECkit.a texlive/libs/libpng/libpng.a  fontconfig/src/.libs/libfontconfig.a texlive/libs/freetype2/libfreetype.a texlive/libs/pplib/libpplib.a texlive/libs/zlib/libz.a texlive/libs/libpaper/libpaper.a texlive/libs/icu/icu-build/lib/libicuuc.a texlive/libs/icu/icu-build/lib/libicudata.a texlive/texk/kpathsea/.libs/libkpathsea.a expat/libexpat.a 
 INCLUDE_DEPS = texlive/libs/icu/include fontconfig
 
 .PHONY: all
@@ -228,14 +228,25 @@ build/native/texlive/texk/dvipdfm-x/xdvipdfmx.a: build/native/texlive.configured
 
 build/native/texlive/texk/bibtex-x/bibtex8.a: build/native/texlive.configured
 	$(MAKE_native) -C $(dir $@) CSFINPUT=/bibtex $(subst -Dmain, -Dbusymain, $(OPTS_native_bibtex))
+	rm $(dir $@)/bibtex8-bibtex.o
 	$(MAKE_native) -C $(dir $@) bibtex8-bibtex.o $(OPTS_native_bibtex)
 	$(AR_native) -crs $@ $(dir $@)/bibtex8-*.o
 
 build/native/texlive/texk/web2c/libxetex.a: build/native/texlive.configured
-	$(MAKE_native) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_native_xetex)
+	$(MAKE_native) -C $(dir $@) clean
+	$(MAKE_native) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(subst -Dmain, -Dbusymain, $(OPTS_native_xetex))
+	rm $(dir $@)/xetexdir/xetex-xetexextra.o
+	$(MAKE_native) -C $(dir $@) xetexdir/xetex-xetexextra.o $(OPTS_native_xetex)
+	$(MAKE_native) -C $(dir $@) libxetex.a $(OPTS_native_xetex)
 
-build/native/texlive/texk/web2c/xetex: 
-	$(MAKE_native) -C $(dir $@) xetex 
+.PHONY: build/native/busytex
+build/native/busytex: 
+	mkdir -p $(dir $@)
+	$(CC) -c busytex.c -o busytex.o
+	$(CXX)  $(CFLAGS_native_OPT) -o $@ -lm busytex.o $(addprefix build/native/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/native/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/native/, $(INCLUDE_DEPS)) 
+
+#build/native/texlive/texk/web2c/xetex: 
+#	$(MAKE_native) -C $(dir $@) xetex 
 
 ################################################################################################################
 
@@ -253,9 +264,6 @@ build/wasm/texlive/texk/web2c/libxetex.a: build/wasm/texlive.configured
 	cp build/native/texlive/texk/web2c/*.c build/wasm/texlive/texk/web2c
 	$(MAKE_wasm) -C $(dir $@) synctexdir/xetex-synctex.o xetex $(OPTS_wasm_xetex)
 
-build/native/busytex: 
-	mkdir -p $(dir $@)
-	$(CC) $(CFLAGS_native_OPT) -o $@ -lm $(addprefix build/native/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/native/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/native/, $(INCLUDE_DEPS)) busytex.c
 
 ################################################################################################################
 
@@ -343,24 +351,24 @@ texlive:
 
 .PHONY: native
 native: 
-	make build/native/texlive.configured
-	make build/native/texlive/libs/libpng/libpng.a 
-	make build/native/texlive/libs/libpaper/libpaper.a 
-	make build/native/texlive/libs/zlib/libz.a 
-	make build/native/texlive/libs/teckit/libTECkit.a 
-	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	make build/native/texlive/libs/graphite2/libgraphite2.a 
-	make build/native/texlive/libs/pplib/libpplib.a 
-	make build/native/texlive/libs/freetype2/libfreetype.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	make build/native/expat/libexpat.a
-	make build/native/fontconfig/src/.libs/libfontconfig.a
+	#make build/native/texlive.configured
+	#make build/native/texlive/libs/libpng/libpng.a 
+	#make build/native/texlive/libs/libpaper/libpaper.a 
+	#make build/native/texlive/libs/zlib/libz.a 
+	#make build/native/texlive/libs/teckit/libTECkit.a 
+	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	#make build/native/texlive/libs/graphite2/libgraphite2.a 
+	#make build/native/texlive/libs/pplib/libpplib.a 
+	#make build/native/texlive/libs/freetype2/libfreetype.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	#make build/native/expat/libexpat.a
+	#make build/native/fontconfig/src/.libs/libfontconfig.a
 	# regular binaries 
-	make build/native/texlive/texk/bibtex-x/bibtex8.a
-	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.a
+	#make build/native/texlive/texk/bibtex-x/bibtex8.a
+	#make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.a
 	make build/native/texlive/texk/web2c/libxetex.a
 	#make build/native/busytex
 	#make build/native/texlive/texk/web2c/xetex

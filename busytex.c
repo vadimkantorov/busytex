@@ -1,5 +1,4 @@
 #include <string.h>
-#include <stdio.h>
 
 extern int optind;
 
@@ -9,6 +8,9 @@ extern int busymain_bibtex8(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
+    if(argc < 2)
+        return 0;
+
     if(strcmp("xetex", argv[1]) == 0 || strcmp("xelatex", argv[1]) == 0)
     {
         argv[1] = argv[0];
