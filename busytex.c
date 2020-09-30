@@ -9,10 +9,6 @@ extern int busymain_bibtex8(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
-    fprintf(stderr, "argc: %d\n", argc);
-    for(int i = 0; i < argc; i++)
-        fprintf(stderr, "ARG %d: [%s]\n", i, argv[i]);
-
     if(strcmp("xetex", argv[1]) == 0 || strcmp("xelatex", argv[1]) == 0)
     {
         argv[1] = argv[0];
