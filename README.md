@@ -1,14 +1,21 @@
 # [WIP] TexLive 2020 compiled with Emscripten into WebAssembly and bundled into a single executable
 
-### Installation
+### Dependencies
 ```shell
+# install dependencies
+apt-get install wget cmake
+
 # install and activate emscripten
 git clone https://github.com/emscripten-core/emsdk
-pushd emsdk
-./emsdk install 2.0.0
-./emsdk activate 2.0.0
+cd emsdk
+./emsdk update-tags
+./emsdk install tot
+./emsdk activate tot
 source emsdk_env.sh
-popd
+```
+
+### Installation
+```shell
 
 # clone busytex
 git clone https://github.com/vadimkantorov/busytex
@@ -42,21 +49,7 @@ make clean
 ### Usage
 ```shell
 # browser version, will serve index.html at http://localhost:8080
-python3 serve.py
-
-# native version
-export TEXMFCNF=$PWD/dist/texmf.cnf
-export TEXMFDIST=$PWD/dist/texlive-basic/texmf-dist
-export FONTCONFIG_PATH=$PWD/dist
-export FONTCONFIG_FILE=texlive.conf
-
-export LATEXFMT=$PWD/dist/latex.fmt
-export BUSYTEX=$PWD/dist/busytex
-
-cd example
-$BUSYTEX xetex --interaction=nonstopmode --halt-on-error --no-pdf --fmt=$LATEXFMT example.tex
-$BUSYTEX bibtex8 example.aux
-$BUSYTEX xdvipdfmx example.xdv
+python3.8 serve.py
 ```
 
 ### References

@@ -1,4 +1,4 @@
-#TODO: check github serving
+##TODO: check github serving
 #TODO: caching for cloning
 #TODO: rate limit error: documentation_url: "https://docs.github.com/rest/overview/resources-in-the-rest-api#rate-limiting"
 #TODO: message: "API rate limit exceeded for 92.169.44.67. (But here's the good news: Authenticated requests get a higher rate limit. Check out the documentation for more details.)"
@@ -83,16 +83,16 @@ CFLAGS_wasm_texlive = -s ERROR_ON_UNDEFINED_SYMBOLS=0 -I$(ROOT)/build/wasm/texli
 CFLAGS_wasm_icu = -s ERROR_ON_UNDEFINED_SYMBOLS=0 $(CFLAGS_wasm_OPT)
 # uuid_generate_random feature request: https://github.com/emscripten-core/emscripten/issues/12093
 CFLAGS_wasm_fontconfig = -Duuid_generate_random=uuid_generate $(CFLAGS_wasm_OPT)
-CFLAGS_wasm_fontconfig_FREETYPE = -I$(ROOT)/build/wasm/texlive/libs/freetype2/ -I$(ROOT)/build/wasm/texlive/libs/freetype2/freetype2/
+CFLAGS_wasm_fontconfig_FREETYPE = $(addprefix -I$(ROOT)/build/wasm/texlive/libs/, freetype2/ freetype2/freetype2/) -
 LIBS_wasm_fontconfig_FREETYPE = -L$(ROOT)/build/wasm/texlive/libs/freetype2/ -lfreetype
 PKGDATAFLAGS_wasm_icu = --without-assembly -O $(ROOT)/build/wasm/texlive/libs/icu/icu-build/data/icupkg.inc
 
 CFLAGS_native_texlive = -I$(ROOT)/build/native/texlive/libs/icu/include -I$(ROOT)/source/fontconfig
-CFLAGS_native_fontconfig_FREETYPE = -I$(ROOT)/build/native/texlive/libs/freetype2/ -I$(ROOT)/build/native/texlive/libs/freetype2/freetype2/
+CFLAGS_native_fontconfig_FREETYPE = $(addprefix -I$(ROOT)/build/native/texlive/libs/, freetype2/ freetype2/freetype2/)
 LIBS_native_fontconfig_FREETYPE = -L$(ROOT)/build/native/texlive/libs/freetype2/ -lfreetype
 
 # EM_COMPILER_WRAPPER / EM_COMPILER_LAUNCHER feature request: https://github.com/emscripten-core/emscripten/issues/12340
-CCSKIP_wasm_icu = $(PYTHON) $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/icupkg $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/pkgdata --
+CCSKIP_wasm_icu = $(PYTHON) $(ROOT)/busytexcc.py $(addprefix $(ROOT)/build/native/texlive/libs/icu/icu-build/bin/, icupkg pkgdata) --
 CCSKIP_wasm_freetype2 = $(PYTHON) $(ROOT)/busytexcc.py $(ROOT)/build/native/texlive/libs/freetype2/ft-build/apinames --
 CCSKIP_wasm_xetex = $(PYTHON) $(ROOT)/busytexcc.py $(addprefix $(ROOT)/build/native/texlive/texk/web2c/, ctangle otangle tangle tangleboot ctangleboot tie xetex) $(addprefix $(ROOT)/build/native/texlive/texk/web2c/web2c/, fixwrites makecpool splitup web2c) --
 OPTS_wasm_icu_configure = CC="$(CCSKIP_wasm_icu) emcc $(CFLAGS_wasm_icu)" CXX="$(CCSKIP_wasm_icu) em++ $(CFLAGS_wasm_icu)"
@@ -128,7 +128,7 @@ source/texlive.downloaded source/expat.downloaded source/fontconfig.downloaded:
 	touch $@
 
 source/fontconfig.patched: source/fontconfig.downloaded
-	patch -d $(basename $<) -Np1 -i $(ROOT)/fontconfig-fcstats-emscripten.patch
+	#patch -d $(basename $<) -Np1 -i $(ROOT)/fontconfig-fcstats-emscripten.patch
 	echo "$(SKIP)" > source/fontconfig/test/Makefile.in 
 	touch $@
 
@@ -243,7 +243,7 @@ build/native/texlive/texk/web2c/libxetex.a: build/native/texlive.configured
 build/native/busytex: 
 	mkdir -p $(dir $@)
 	$(CC) -c busytex.c -o busytex.o
-	$(CXX)  $(CFLAGS_native_OPT) -o $@ -lm busytex.o $(addprefix build/native/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/native/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/native/, $(INCLUDE_DEPS)) 
+	$(CXX)  $(CFLAGS_native_OPT) -o $@ -lm -pthread busytex.o $(addprefix build/native/texlive/texk/web2c/, $(OBJ_XETEX)) $(addprefix build/native/, $(OBJ_DVIPDF) $(OBJ_BIBTEX) $(OBJ_DEPS)) $(addprefix -Ibuild/native/, $(INCLUDE_DEPS)) 
 
 #build/native/texlive/texk/web2c/xetex: 
 #	$(MAKE_native) -C $(dir $@) xetex 
@@ -297,11 +297,11 @@ build/texlive-%/texmf-dist: build/install-tl/install-tl build/texlive-%.profile
 	TEXLIVE_INSTALL_NO_RESUME=1 $< -profile build/texlive-$*.profile
 	rm -rf $(addprefix $(dir $@)/, bin readme* tlpkg install* *.html texmf-dist/doc texmf-var/doc texmf-var/web2c readme-html.dir readme-txt.dir) || true
 
-build/format-%/latex.fmt: build/native/texlive/texk/web2c/xetex build/texlive-%/texmf-dist 
+build/format-%/latex.fmt: build/native/busytex build/texlive-%/texmf-dist 
 	mkdir -p $(dir $@)
 	rm $(dir $@)/* || true
-	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex unpack.ins
-	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base:build/texlive-basic/texmf-dist/tex/generic/unicode-data:build/texlive-basic/texmf-dist/tex/latex/base:build/texlive-basic/texmf-dist/tex/generic/hyphen/ TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex latex.ltx
+	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< xetex -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex unpack.ins
+	TEXINPUTS=build/texlive-basic/texmf-dist/source/latex/base:build/texlive-basic/texmf-dist/tex/generic/unicode-data:build/texlive-basic/texmf-dist/tex/latex/base:build/texlive-basic/texmf-dist/tex/generic/hyphen/ TEXMFCNF=build/texlive-$*/texmf-dist/web2c TEXMFDIST=build/texlive-$*/texmf-dist $< xetex -interaction=nonstopmode -output-directory=$(dir $@) -kpathsea-debug=32 -ini -etex latex.ltx
 
 build/wasm/texlive-%.js: build/format-%/latex.fmt build/texlive-%/texmf-dist build/wasm/fontconfig.conf 
 	#https://github.com/emscripten-core/emscripten/issues/12214
@@ -351,27 +351,26 @@ texlive:
 
 .PHONY: native
 native: 
-	#make build/native/texlive.configured
-	#make build/native/texlive/libs/libpng/libpng.a 
-	#make build/native/texlive/libs/libpaper/libpaper.a 
-	#make build/native/texlive/libs/zlib/libz.a 
-	#make build/native/texlive/libs/teckit/libTECkit.a 
-	#make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
-	#make build/native/texlive/libs/graphite2/libgraphite2.a 
-	#make build/native/texlive/libs/pplib/libpplib.a 
-	#make build/native/texlive/libs/freetype2/libfreetype.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
-	#make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
-	#make build/native/texlive/libs/icu/icu-build/bin/icupkg 
-	#make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
-	#make build/native/expat/libexpat.a
-	#make build/native/fontconfig/src/.libs/libfontconfig.a
+	make build/native/texlive.configured
+	make build/native/texlive/libs/libpng/libpng.a 
+	make build/native/texlive/libs/libpaper/libpaper.a 
+	make build/native/texlive/libs/zlib/libz.a 
+	make build/native/texlive/libs/teckit/libTECkit.a 
+	make build/native/texlive/libs/harfbuzz/libharfbuzz.a 
+	make build/native/texlive/libs/graphite2/libgraphite2.a 
+	make build/native/texlive/libs/pplib/libpplib.a 
+	make build/native/texlive/libs/freetype2/libfreetype.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicuuc.a 
+	make build/native/texlive/libs/icu/icu-build/lib/libicudata.a
+	make build/native/texlive/libs/icu/icu-build/bin/icupkg 
+	make build/native/texlive/libs/icu/icu-build/bin/pkgdata 
+	make build/native/expat/libexpat.a
+	make build/native/fontconfig/src/.libs/libfontconfig.a
 	# regular binaries 
-	#make build/native/texlive/texk/bibtex-x/bibtex8.a
-	#make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.a
+	make build/native/texlive/texk/bibtex-x/bibtex8.a
+	make build/native/texlive/texk/dvipdfm-x/xdvipdfmx.a
 	make build/native/texlive/texk/web2c/libxetex.a
-	#make build/native/busytex
-	#make build/native/texlive/texk/web2c/xetex
+	make build/native/busytex
 
 #.PHONY: tds-basic tds-small tds-full
 tds-%:
@@ -455,6 +454,7 @@ dist:
 	mkdir -p $@
 	cp build/wasm/busytex.js build/wasm/busytex.wasm $@
 	cp build/wasm/texlive-*.js build/wasm/texlive-*.data $@
+	cp build/native/busytex dist
 	#cp -r build/native/busytex build/texlive build/texmf.cnf build/fontconfig $@
 
 .PHONY: dist/emscriptenfs.js

@@ -1,3 +1,6 @@
+//https://www.freedesktop.org/software/fontconfig/fontconfig-user.html
+//kpathsea_debug
+
 function BusytexDefaultScriptLoader(src)
 {
     return new Promise((resolve, reject) =>
