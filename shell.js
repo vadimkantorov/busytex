@@ -2,7 +2,7 @@ import { Guthub } from '/guthub.js'
 
 export class Shell
 {
-    constructor(terminal, editor, hash_auth_token, search_repo_path, helloworld, paths, ui)
+    constructor(busy, terminal, editor, hash_auth_token, search_repo_path, helloworld, paths, ui)
     {
         this.home_dir = '/home/web_user';
         this.cache_dir = '/cache';
@@ -12,6 +12,7 @@ export class Shell
         this.log_path = '';
         this.current_terminal_line = '';
         this.FS = null;
+        this.busy = busy;
         this.guthub = null;
         this.terminal = terminal;
         this.editor = editor;
@@ -136,7 +137,7 @@ export class Shell
                 }
                 else if(cmd == 'status')
                 {
-                    const files = ls_R('.');
+                    const files = this.ls_R('.');
                     await this.guthub.status(files);
                 }
                 else if(cmd == 'save')
@@ -216,7 +217,7 @@ export class Shell
         this.FS.mkdir(this.cache_dir);
         this.FS.mount(this.FS.filesystems.IDBFS, {}, this.cache_dir);
         this.FS.chdir(this.home_dir);
-        this.guthub = new Guthub(this.FS, this.github_auth_token, this.cache_dir, this.terminal_println.bind(this));
+        this.guthub = new Guthub(this.FS, this.busy, this.github_auth_token, this.cache_dir, this.terminal_println.bind(this));
         await this.load_cache();
         if(this.github_https_path.length > 0)
         {
@@ -294,14 +295,14 @@ export class Shell
 
     ls_R(root, relative_dir_path)
     {
-        relative_dir_path = relative_dir_path || '.';
+        relative_dir_path = relative_dir_path || '';
         let entries = [];
         for(const [name, entry] of Object.entries(this.FS.lookupPath(`${root}/${relative_dir_path}`, {parent : false}).node.contents))
         {
-            const relative_path = `${relative_dir_path}/${name}`;
+            const relative_path = relative_dir_path ? `${relative_dir_path}/${name}` : name;
             const absolute_path = `${root}/${relative_path}`;
             if(entry.isFolder)
-                entries.push({path : relative_path}, ...traverse(root, relative_path));
+                entries.push({path : relative_path}, ...this.ls_R(root, relative_path));
             else
                 entries.push({path : relative_path, contents : this.FS.readFile(absolute_path, {encoding : 'binary'})});
         }

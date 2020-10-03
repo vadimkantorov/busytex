@@ -154,7 +154,7 @@ require(['vs/editor/editor.main', 'xterm/xterm', 'xterm/addons/fit/fit', './dist
     const terminal = new Terminal();
     terminal.open(ui.terminal);
 
-    window.busyshell = new Shell(terminal, text_editor, window.location.hash, window.location.search, atob(ui.helloworld.innerHTML), paths, ui);
+    window.busyshell = new Shell(busy, terminal, text_editor, window.location.hash, window.location.search, atob(ui.helloworld.innerHTML), paths, ui);
 
     window.onresize = ui.onresize;
     window.onresize();

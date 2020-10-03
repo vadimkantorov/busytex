@@ -30,7 +30,7 @@ export class Guthub
         return array;
     }
 
-    save_githubcontents(repo_path, path)
+    save_githubcontents(repo_path, repo)
     {
         this.FS.writeFile(repo_path + '/' + this.github_contents, JSON.stringify(repo));
     }
@@ -51,9 +51,11 @@ export class Guthub
         
         const resp = await this.github_api_request(https_path, '/contents');
         const repo = await resp.json();
-        while(repo.length > 0)
+        let Q = [...repo];
+
+        while(Q.length > 0)
         {
-            const file = repo.pop();
+            const file = Q.pop();
             if(file.type == 'file')
             {
                 const file_path = repo_path + '/' + file.path;
@@ -80,6 +82,7 @@ export class Guthub
                 const resp = await this.github_api_request(https_path, '/contents/' + file.path);
                 const dir = await resp.json();
                 repo.push(...dir);
+                Q.push(...dir);
             }
         }
         this.save_githubcontents(repo_path, repo);
@@ -121,10 +124,29 @@ export class Guthub
         const prev = this.read_githubcontents(true);
         for(const file of ls_R)
         {
-            const prev_file = prev[file.path];
-            if(this.blob_sha(file.contents) != prev_file.sha)
-                this.print(`modified: ${file.path}`)
+            if(!file.contents || file.path.startsWith('.git/'))
+            {
+                delete prev[file.path];
+                continue;
+            }
+
+            const sha = prev[file.path];
+            
+            if(!sha)
+                this.print(`new: ${file.path}`);
+            else
+            {
+                if(sha != this.blob_sha(file.contents))
+                    this.print(`modified: ${file.path}`);
+
+                delete prev[file.path];
+            }
         }
+        
+        for(const file_path in prev)
+            this.print(`deleted: ${file_path}`)
+
+        this.print('ok!');
     }
 
     async clone(https_path, repo_path)
@@ -136,11 +158,11 @@ export class Guthub
         this.FS.mkdir(repo_path);
         this.FS.mkdir(repo_path + '/.git');
         this.FS.writeFile(repo_path + '/.git/config', '[remote "origin"]\nurl = ' + https_path);
-        this.save_githubcontents(repo_path, repo);
-        
-        while(repo.length > 0)
+
+        let Q = [...repo];
+        while(Q.length > 0)
         {
-            const file = repo.pop();
+            const file = Q.pop();
             if(file.type == 'file')
             {
                 const file_path = repo_path + '/' + file.path;
@@ -153,8 +175,10 @@ export class Guthub
                 const resp = await this.github_api_request(https_path, '/contents/' + file.path);
                 const dir = await resp.json();
                 repo.push(...dir);
+                Q.push(...dir);
             }
         }
+        this.save_githubcontents(repo_path, repo);
         this.print('Done!');
     }
 
