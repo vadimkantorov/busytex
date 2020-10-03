@@ -4,7 +4,9 @@ export class Shell
 {
     constructor(terminal, editor, hash_auth_token, search_repo_path, helloworld, paths, ui)
     {
-        this.home = '/home/web_user';
+        this.home_dir = '/home/web_user';
+        this.cache_dir = '/cache';
+
         this.tic_ = 0;
         this.pdf_path = '';
         this.log_path = '';
@@ -29,6 +31,25 @@ export class Shell
        
         this.compiler.onmessage = this.oncompilermessage;
         this.terminal.on('key', this.onkey.bind(this));
+    }
+
+    async purge_cache()
+    {
+        const cached_files = this.FS.readdir(this.cache_dir);
+        for(const file_name of cached_files)
+            if(file_name != '.' && file_name != '..')
+                this.FS.unlink(this.cache_dir + '/' + file_name);
+        await this.save_cache();
+    }
+
+    async load_cache()
+    {
+        return new Promise((resolve, reject) => this.FS.syncfs(true, x => x == null ? resolve(true) : reject(false)));
+    }
+    
+    async save_cache()
+    {
+        return new Promise((resolve, reject) => this.FS.syncfs(false, x => x == null ? resolve(true) : reject(false)));
     }
 
     terminal_println(line)
@@ -113,9 +134,19 @@ export class Shell
                 {
                     this.open(arg);
                 }
+                else if(cmd == 'status')
+                {
+                    const files = ls_R('.');
+                    await this.guthub.status(files);
+                }
                 else if(cmd == 'save')
                 {
                     this.save(arg, this.editor.getModel().getValue());
+                }
+                else if(cmd == 'purge')
+                {
+                    await this.purge_cache();
+                    this.terminal_println(ok);
                 }
                 else
                 {
@@ -156,13 +187,13 @@ export class Shell
         }
     }
 
-    async run()
+    async run(busy)
     {
         this.compiler.postMessage(this.paths);
         
         this.open('helloworld.pdf', this.helloworld);
         
-        await this.onload();
+        await this.onload(busy);
         this.terminal_prompt();
     }
 
@@ -178,12 +209,15 @@ export class Shell
         this.terminal_println(`Elapsed time: ${elapsed.toFixed(2)} sec`);
     }
 
-    async onload()
+    async onload(busy)
     {
-        const Module = await emscriptenfs(modularized_module(null, () =>  {}, this.log));
+        const Module = await busy(modularized(this.log));
         this.FS = Module.FS;
-        this.FS.chdir(this.home);
-        this.guthub = new Guthub(this.FS, this.github_auth_token, this.terminal_println);
+        this.FS.mkdir(this.cache_dir);
+        this.FS.mount(this.FS.filesystems.IDBFS, {}, this.cache_dir);
+        this.FS.chdir(this.home_dir);
+        this.guthub = new Guthub(this.FS, this.github_auth_token, this.cache_dir, this.terminal_println.bind(this));
+        await this.load_cache();
         if(this.github_https_path.length > 0)
         {
             const repo_path = await this.clone(this.github_https_path);
@@ -223,7 +257,7 @@ export class Shell
 
     help()
     {
-        return ['help', 'latexmk', 'download', 'clear', 'pwd', 'ls', 'mkdir', 'cd', 'clone', 'push', 'open', 'save'].sort();
+        return ['help', 'status', 'purge', 'latexmk', 'download', 'clear', 'pwd', 'ls', 'mkdir', 'cd', 'clone', 'push', 'open', 'save'].sort();
     }
 
     save(file_path, contents)
@@ -233,8 +267,8 @@ export class Shell
 
     pwd(replace_home)
     {
-        const cwd = this.FS ? this.FS.cwd() : this.home;
-        return replace_home == true ? cwd.replace(this.home, '~') : cwd;    
+        const cwd = this.FS ? this.FS.cwd() : this.home_dir;
+        return replace_home == true ? cwd.replace(this.home_dir, '~') : cwd;    
     }
     
     clear()
@@ -249,7 +283,7 @@ export class Shell
     
     cd(path)
     {
-        //const expanduser = path => return path.replace('~', this.home);
+        //const expanduser = path => return path.replace('~', this.home_dir);
         this.FS.chdir(path);
     }
 
@@ -258,37 +292,38 @@ export class Shell
         this.FS.mkdir(path);
     }
 
+    ls_R(root, relative_dir_path)
+    {
+        relative_dir_path = relative_dir_path || '.';
+        let entries = [];
+        for(const [name, entry] of Object.entries(this.FS.lookupPath(`${root}/${relative_dir_path}`, {parent : false}).node.contents))
+        {
+            const relative_path = `${relative_dir_path}/${name}`;
+            const absolute_path = `${root}/${relative_path}`;
+            if(entry.isFolder)
+                entries.push({path : relative_path}, ...traverse(root, relative_path));
+            else
+                entries.push({path : relative_path, contents : this.FS.readFile(absolute_path, {encoding : 'binary'})});
+        }
+        return entries;
+    }
+
     async latexmk(tex_path)
     {
         this.println('Running in background...');
         this.tic();
-        const traverse = (root, relative_dir_path) =>
-        {
-            let entries = [];
-            for(const [name, entry] of Object.entries(this.FS.lookupPath(`${root}/${relative_dir_path}`, {parent : false}).node.contents))
-            {
-                const relative_path = `${relative_dir_path}/${name}`;
-                const absolute_path = `${root}/${relative_path}`;
-                if(entry.isFolder)
-                    entries.push({path : relative_path}, ...traverse(root, relative_path));
-                else
-                    entries.push({path : relative_path, contents : this.FS.readFile(absolute_path, {encoding : 'binary'})});
-            }
-            return entries;
-        };
-
         this.pdf_path = tex_path.replace('.tex', '.pdf');
         this.log_path = log_path.replace('.tex', '.log');
         
         const cwd = this.FS.cwd();
         console.assert(tex_path.endsWith('.tex'));
-        console.assert(cwd.startsWith(this.home));
+        console.assert(cwd.startsWith(this.home_dir));
         
         const project_dir = cwd.split('/').slice(0, 4).join('/');
         const source_path = `${cwd}/${tex_path}`;
         const main_tex_path = source_path.slice(project_dir.length + 1);
 
-        const files = traverse(project_dir, '.');
+        const files = this.ls_R(project_dir);
         this.compiler.postMessage({files : files, main_tex_path : main_tex_path});
     }
 
@@ -319,6 +354,7 @@ export class Shell
     {
         const repo_path = https_path.split('/').pop();
         await this.guthub.clone(https_path, repo_path);
+        await this.save_cache();
         return repo_path;
     }
 
@@ -328,29 +364,29 @@ export class Shell
     }
 }
 
-function modularized_module(thisProgram, preRun, println)
+function modularized(println)
 {
     const Module =
     {
         noInitialRun : true,
 
-        thisProgram : thisProgram,
+        output : '',
 
-        preRun : [preRun],
-        
         print(text) 
         {
-            Module.setStatus('stdout: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
+            text = arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text;
+            Module.output += text;
         },
 
         printErr(text)
         {
+            text = arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text;
             Module.setStatus('stderr: ' + (arguments.length > 1 ?  Array.prototype.slice.call(arguments).join(' ') : text));
         },
         
         setStatus(text)
         {
-            println((this.statusPrefix || '') + text);
+            println(text);
         },
         
         monitorRunDependencies(left)

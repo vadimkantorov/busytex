@@ -59,6 +59,7 @@ python3.8 serve.py
 4. [SwiftLaTeX](https://github.com/SwiftLaTeX/SwiftLaTeX)
 5. [JavascriptSubtitlesOctopus](https://github.com/Dador/JavascriptSubtitlesOctopus)
 6. fontconfig patch [1](https://github.com/Dador/JavascriptSubtitlesOctopus/blob/master/build/patches/fontconfig/0002-fix-fcstats-emscripten.patch) and [2](https://github.com/lyze/xetex-js/blob/master/fontconfig-fcstat.c.patch)
+7. [js-sha1](https://raw.githubusercontent.com/emn178/js-sha1)
 
 ### Links
 https://github.com/Sable/emscripten_malloc

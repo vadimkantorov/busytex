@@ -144,8 +144,10 @@ window.MonacoEnvironment =
     }
 };
 
-require(['vs/editor/editor.main', 'xterm/xterm', 'xterm/addons/fit/fit', './dist/emscriptenfs'], async (editor, Terminal, fit, emscriptenfs) =>
+require(['vs/editor/editor.main', 'xterm/xterm', 'xterm/addons/fit/fit', './dist/busy', 'sha1'], async (editor, Terminal, fit, busy, sha1) =>
 {
+    window.sha1 = sha1;
+
     const text_editor = editor.editor.create(ui.editor, { theme: 'vs-dark' });
 
     Terminal.applyAddon(fit);
@@ -157,7 +159,7 @@ require(['vs/editor/editor.main', 'xterm/xterm', 'xterm/addons/fit/fit', './dist
     window.onresize = ui.onresize;
     window.onresize();
 
-    await window.busyshell.run();
+    await window.busyshell.run(busy);
 });
 
 </script>
